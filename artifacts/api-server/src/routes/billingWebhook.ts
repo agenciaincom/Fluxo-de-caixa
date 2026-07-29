@@ -7,6 +7,22 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
+function getCurrentPeriodEnd(subscription: any): Date | null {
+  const fromItem = subscription?.items?.data?.[0]?.current_period_end;
+  const fromTop = subscription?.current_period_end;
+  const raw = fromItem ?? fromTop;
+  if (!raw) return null;
+  const date = new Date(raw * 1000);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getTrialEnd(subscription: any): Date | null {
+  const raw = subscription?.trial_end;
+  if (!raw) return null;
+  const date = new Date(raw * 1000);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 router.post("/", express.raw({ type: "application/json" }), async (req, res): Promise<void> => {
   const sig = req.headers["stripe-signature"];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -36,8 +52,8 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res): Pr
           .set({
             stripeSubscriptionId: subscription.id,
             status: subscription.status === "trialing" ? "trialing" : "active",
-            trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-            currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+            trialEnd: getTrialEnd(subscription),
+            currentPeriodEnd: getCurrentPeriodEnd(subscription),
           })
           .where(eq(subscriptionsTable.userId, userId));
       }
@@ -60,8 +76,8 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res): Pr
           .update(subscriptionsTable)
           .set({
             status,
-            trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-            currentPeriodEnd: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : null,
+            trialEnd: getTrialEnd(subscription),
+            currentPeriodEnd: getCurrentPeriodEnd(subscription),
           })
           .where(eq(subscriptionsTable.userId, sub.userId));
       }
