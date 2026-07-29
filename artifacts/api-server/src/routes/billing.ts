@@ -60,6 +60,7 @@ router.post("/billing/checkout", requireAuth, async (req, res): Promise<void> =>
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
+    payment_method_types: ["card"],
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: jaUsouTrial ? undefined : { trial_period_days: 7 },
     success_url: `${APP_URL}/dashboard?assinatura=sucesso`,
