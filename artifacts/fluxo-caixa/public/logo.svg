@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60">
+  <rect width="200" height="60" rx="8" fill="#0B1C42" />
+  <text x="40" y="40" font-family="'Playfair Display', Georgia, serif" font-size="32" font-weight="700" fill="#C99A2E" text-anchor="middle">FC</text>
+  <text x="125" y="36" font-family="'Playfair Display', Georgia, serif" font-size="18" font-weight="600" fill="#F6F1E4" text-anchor="middle">Fluxo de Caixa</text>
+</svg>
