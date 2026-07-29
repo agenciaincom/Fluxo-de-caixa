@@ -1,7 +1,7 @@
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -16,6 +16,7 @@ import EntradasPage from '@/pages/entradas';
 import SaidasPage from '@/pages/saidas';
 import RelatorioPage from '@/pages/relatorio';
 import ScanPage from '@/pages/scan';
+import AssinaturaPage from '@/pages/assinatura';
 
 const queryClient = new QueryClient();
 
@@ -118,12 +119,39 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function RequireSubscription({ children }: { children: React.ReactNode }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['billing-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/billing/status', { credentials: 'include' });
+      if (!res.ok) throw new Error('Erro ao verificar assinatura');
+      return res.json() as Promise<{ active: boolean }>;
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center text-[#6B7BA4]">
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!data?.active) {
+    return <AssinaturaPage />;
+  }
+
+  return <>{children}</>;
+}
+
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   return (
     <>
       <Show when="signed-in">
         <Layout>
-          <Component />
+          <RequireSubscription>
+            <Component />
+          </RequireSubscription>
         </Layout>
       </Show>
       <Show when="signed-out">
