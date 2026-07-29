@@ -1,0 +1,570 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Fluxo de Caixa API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: entradas
+    description: Contas a receber
+  - name: saidas
+    description: Contas a pagar
+  - name: dashboard
+    description: Painel principal
+  - name: avisos
+    description: Central de avisos
+  - name: relatorio
+    description: Relatório semanal
+  - name: scan
+    description: Leitura de imagem por IA
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /entradas:
+    get:
+      operationId: listEntradas
+      tags: [entradas]
+      summary: Listar contas a receber
+      responses:
+        "200":
+          description: Lista de entradas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entrada"
+    post:
+      operationId: createEntrada
+      tags: [entradas]
+      summary: Criar conta a receber
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntradaInput"
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entrada"
+
+  /entradas/{id}:
+    get:
+      operationId: getEntrada
+      tags: [entradas]
+      summary: Buscar conta a receber
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Entrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entrada"
+        "404":
+          description: Não encontrado
+    patch:
+      operationId: updateEntrada
+      tags: [entradas]
+      summary: Atualizar conta a receber
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntradaUpdate"
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entrada"
+        "404":
+          description: Não encontrado
+    delete:
+      operationId: deleteEntrada
+      tags: [entradas]
+      summary: Excluir conta a receber
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Excluído
+        "404":
+          description: Não encontrado
+
+  /saidas:
+    get:
+      operationId: listSaidas
+      tags: [saidas]
+      summary: Listar contas a pagar
+      responses:
+        "200":
+          description: Lista de saídas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Saida"
+    post:
+      operationId: createSaida
+      tags: [saidas]
+      summary: Criar conta a pagar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaidaInput"
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Saida"
+
+  /saidas/{id}:
+    get:
+      operationId: getSaida
+      tags: [saidas]
+      summary: Buscar conta a pagar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Saída
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Saida"
+        "404":
+          description: Não encontrado
+    patch:
+      operationId: updateSaida
+      tags: [saidas]
+      summary: Atualizar conta a pagar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaidaUpdate"
+      responses:
+        "200":
+          description: Atualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Saida"
+        "404":
+          description: Não encontrado
+    delete:
+      operationId: deleteSaida
+      tags: [saidas]
+      summary: Excluir conta a pagar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Excluído
+        "404":
+          description: Não encontrado
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Resumo do painel
+      responses:
+        "200":
+          description: Resumo financeiro
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /avisos:
+    get:
+      operationId: getAvisos
+      tags: [avisos]
+      summary: Central de avisos
+      responses:
+        "200":
+          description: Avisos do dia
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvisosResult"
+
+  /relatorio-semanal:
+    get:
+      operationId: getRelatorioSemanal
+      tags: [relatorio]
+      summary: Relatório semanal
+      parameters:
+        - name: weekStart
+          in: query
+          required: false
+          schema:
+            type: string
+            description: Data de início da semana (YYYY-MM-DD)
+      responses:
+        "200":
+          description: Relatório semanal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelatorioSemanal"
+
+  /scan-imagem:
+    post:
+      operationId: scanImagem
+      tags: [scan]
+      summary: Escanear imagem com IA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanImagemInput"
+      responses:
+        "200":
+          description: Dados extraídos da imagem
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanImagemResult"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Entrada:
+      type: object
+      required: [id, userId, cliente, valor, vencimento, formaPagamento, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        cliente:
+          type: string
+        valor:
+          type: number
+        vencimento:
+          type: string
+          description: Data no formato YYYY-MM-DD
+        formaPagamento:
+          type: string
+          enum: [pix, boleto]
+        dadosPagamento:
+          type: ["string", "null"]
+          description: Chave Pix ou link/código do boleto
+        status:
+          type: string
+          enum: [pago, pendente]
+        observacao:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    EntradaInput:
+      type: object
+      required: [cliente, valor, vencimento, formaPagamento, status]
+      properties:
+        cliente:
+          type: string
+          minLength: 1
+        valor:
+          type: number
+        vencimento:
+          type: string
+          description: Data no formato YYYY-MM-DD
+        formaPagamento:
+          type: string
+          enum: [pix, boleto]
+        dadosPagamento:
+          type: string
+        status:
+          type: string
+          enum: [pago, pendente]
+        observacao:
+          type: string
+
+    EntradaUpdate:
+      type: object
+      properties:
+        cliente:
+          type: string
+        valor:
+          type: number
+        vencimento:
+          type: string
+        formaPagamento:
+          type: string
+          enum: [pix, boleto]
+        dadosPagamento:
+          type: string
+        status:
+          type: string
+          enum: [pago, pendente]
+        observacao:
+          type: string
+
+    Saida:
+      type: object
+      required: [id, userId, descricao, valor, vencimento, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        descricao:
+          type: string
+        valor:
+          type: number
+        vencimento:
+          type: string
+          description: Data no formato YYYY-MM-DD
+        status:
+          type: string
+          enum: [pago, pendente]
+        observacao:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: ["string", "null"]
+
+    SaidaInput:
+      type: object
+      required: [descricao, valor, vencimento, status]
+      properties:
+        descricao:
+          type: string
+          minLength: 1
+        valor:
+          type: number
+        vencimento:
+          type: string
+          description: Data no formato YYYY-MM-DD
+        status:
+          type: string
+          enum: [pago, pendente]
+        observacao:
+          type: string
+
+    SaidaUpdate:
+      type: object
+      properties:
+        descricao:
+          type: string
+        valor:
+          type: number
+        vencimento:
+          type: string
+        status:
+          type: string
+          enum: [pago, pendente]
+        observacao:
+          type: string
+
+    DashboardSummary:
+      type: object
+      required: [saldoAtual, totalAReceber, totalAPagar, entradasPagas, saidasPagas, entradasPendentes, saidasPendentes]
+      properties:
+        saldoAtual:
+          type: number
+          description: Entradas pagas menos saídas pagas
+        totalAReceber:
+          type: number
+          description: Total de entradas pendentes
+        totalAPagar:
+          type: number
+          description: Total de saídas pendentes
+        entradasPagas:
+          type: number
+        saidasPagas:
+          type: number
+        entradasPendentes:
+          type: number
+        saidasPendentes:
+          type: number
+
+    AvisoEntrada:
+      type: object
+      required: [id, cliente, valor, vencimento, formaPagamento]
+      properties:
+        id:
+          type: integer
+        cliente:
+          type: string
+        valor:
+          type: number
+        vencimento:
+          type: string
+        formaPagamento:
+          type: string
+          enum: [pix, boleto]
+        dadosPagamento:
+          type: ["string", "null"]
+
+    AvisoSaida:
+      type: object
+      required: [id, descricao, valor, vencimento]
+      properties:
+        id:
+          type: integer
+        descricao:
+          type: string
+        valor:
+          type: number
+        vencimento:
+          type: string
+
+    AvisosResult:
+      type: object
+      required: [entradasVencendoAmanha, saidasVencendoHoje, saidasVencendoAmanha]
+      properties:
+        entradasVencendoAmanha:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvisoEntrada"
+        saidasVencendoHoje:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvisoSaida"
+        saidasVencendoAmanha:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvisoSaida"
+
+    DiaSemana:
+      type: object
+      required: [data, diaSemana, entradas, saidas]
+      properties:
+        data:
+          type: string
+        diaSemana:
+          type: string
+        entradas:
+          type: number
+        saidas:
+          type: number
+
+    RelatorioSemanal:
+      type: object
+      required: [weekStart, weekEnd, totalEntradas, totalSaidas, saldo, diasSemana]
+      properties:
+        weekStart:
+          type: string
+        weekEnd:
+          type: string
+        totalEntradas:
+          type: number
+        totalSaidas:
+          type: number
+        saldo:
+          type: number
+        diasSemana:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiaSemana"
+
+    ScanImagemInput:
+      type: object
+      required: [imagemBase64]
+      properties:
+        imagemBase64:
+          type: string
+          description: Imagem em base64
+        mimeType:
+          type: string
+          description: Tipo MIME da imagem (image/jpeg, image/png, etc)
+
+    ScanImagemResult:
+      type: object
+      properties:
+        tipo:
+          type: ["string", "null"]
+          enum: [entrada, saida, null]
+        cliente:
+          type: ["string", "null"]
+        descricao:
+          type: ["string", "null"]
+        valor:
+          type: ["number", "null"]
+        vencimento:
+          type: ["string", "null"]
+        formaPagamento:
+          type: ["string", "null"]
+          enum: [pix, boleto, null]
+        dadosPagamento:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+          enum: [pago, pendente, null]
+        observacao:
+          type: ["string", "null"]
+        erro:
+          type: ["string", "null"]
