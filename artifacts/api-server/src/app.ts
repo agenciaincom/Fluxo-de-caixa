@@ -10,6 +10,7 @@ import {
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
 import router from "./routes";
+import billingWebhookRouter from "./routes/billingWebhook";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -34,8 +35,9 @@ app.use(
   }),
 );
 
-// Clerk proxy must be before body parsers
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+app.use("/api/billing/webhook", billingWebhookRouter);
 
 app.use(cors({ credentials: true, origin: true }));
 app.use(express.json({ limit: "10mb" }));
@@ -52,7 +54,6 @@ app.use(
 
 app.use("/api", router);
 
-// Serve o frontend já compilado (mesmo serviço do Render entrega tudo)
 const frontendDist = path.resolve(__dirname, "../../fluxo-caixa/dist/public");
 app.use(express.static(frontendDist));
 app.get(/^(?!\/api).*/, (_req, res) => {
