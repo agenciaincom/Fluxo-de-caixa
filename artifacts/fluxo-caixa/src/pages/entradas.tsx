@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, CheckCircle2, Circle, MoreVertical, Search, FileText, Tag } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, FileText, Tag, Copy, Eye } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -15,6 +15,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,6 +53,7 @@ export default function EntradasPage() {
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filtroCentroCusto, setFiltroCentroCusto] = useState<string>("todos");
+  const [detalheEntrada, setDetalheEntrada] = useState<Entrada | null>(null);
   const [formData, setFormData] = useState({
     cliente: "",
     valor: "",
@@ -55,12 +63,22 @@ export default function EntradasPage() {
     status: "pendente" as EntradaInputStatus,
     observacao: "",
     centroCusto: "",
+    contaBancaria: "",
+    dataPagamento: "",
   });
 
   const centrosCusto = useMemo(() => {
     const set = new Set<string>();
     entradas.forEach((e) => {
       if (e.centroCusto) set.add(e.centroCusto);
+    });
+    return Array.from(set).sort();
+  }, [entradas]);
+
+  const contasBancarias = useMemo(() => {
+    const set = new Set<string>();
+    entradas.forEach((e) => {
+      if (e.contaBancaria) set.add(e.contaBancaria);
     });
     return Array.from(set).sort();
   }, [entradas]);
@@ -98,6 +116,11 @@ export default function EntradasPage() {
     }
   };
 
+  const handleCopy = (texto: string) => {
+    navigator.clipboard.writeText(texto);
+    toast({ title: "Copiado!", description: "Dado de pagamento copiado para a área de transferência." });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createEntrada.mutate(
@@ -106,6 +129,8 @@ export default function EntradasPage() {
           ...formData,
           valor: Number(formData.valor),
           centroCusto: formData.centroCusto || undefined,
+          contaBancaria: formData.contaBancaria || undefined,
+          dataPagamento: formData.dataPagamento || undefined,
         } 
       },
       {
@@ -115,7 +140,8 @@ export default function EntradasPage() {
           setIsSheetOpen(false);
           setFormData({
             cliente: "", valor: "", vencimento: format(new Date(), "yyyy-MM-dd"),
-            formaPagamento: "pix", dadosPagamento: "", status: "pendente", observacao: "", centroCusto: ""
+            formaPagamento: "pix", dadosPagamento: "", status: "pendente", observacao: "",
+            centroCusto: "", contaBancaria: "", dataPagamento: ""
           });
         }
       }
@@ -164,7 +190,7 @@ export default function EntradasPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dadosPagamento">Dados de Pagamento (Chave Pix ou Link)</Label>
+                <Label htmlFor="dadosPagamento">Dados de Pagamento (Chave Pix ou Link/Código do Boleto)</Label>
                 <Input id="dadosPagamento" value={formData.dadosPagamento} onChange={e => setFormData({...formData, dadosPagamento: e.target.value})} className="bg-white" />
               </div>
               <div className="space-y-2">
@@ -173,6 +199,19 @@ export default function EntradasPage() {
                 <datalist id="centros-custo-sugestoes">
                   {centrosCusto.map((c) => <option key={c} value={c} />)}
                 </datalist>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contaBancaria">Conta Bancária</Label>
+                  <Input id="contaBancaria" placeholder="Ex: Inter, Nubank..." value={formData.contaBancaria} onChange={e => setFormData({...formData, contaBancaria: e.target.value})} className="bg-white" list="contas-bancarias-sugestoes" />
+                  <datalist id="contas-bancarias-sugestoes">
+                    {contasBancarias.map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dataPagamento">Data que Recebeu</Label>
+                  <Input id="dataPagamento" type="date" value={formData.dataPagamento} onChange={e => setFormData({...formData, dataPagamento: e.target.value})} className="bg-white" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="status">Status *</Label>
@@ -231,9 +270,9 @@ export default function EntradasPage() {
           {entradasFiltradas.map((entrada) => {
             const isPago = entrada.status === "pago";
             return (
-              <div key={entrada.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-xl border shadow-sm transition-all bg-white hover:border-primary/30 ${isPago ? 'border-border opacity-80' : 'border-card-border'}`}>
+              <div key={entrada.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-xl border shadow-sm transition-all bg-white hover:border-primary/30 cursor-pointer ${isPago ? 'border-border opacity-80' : 'border-card-border'}`} onClick={() => setDetalheEntrada(entrada)}>
                 <div className="flex items-start gap-4">
-                  <button onClick={() => toggleStatus(entrada)} className={`mt-1 sm:mt-0 flex-shrink-0 transition-colors ${isPago ? 'text-green-500 hover:text-green-600' : 'text-muted-foreground hover:text-accent'}`}>
+                  <button onClick={(ev) => { ev.stopPropagation(); toggleStatus(entrada); }} className={`mt-1 sm:mt-0 flex-shrink-0 transition-colors ${isPago ? 'text-green-500 hover:text-green-600' : 'text-muted-foreground hover:text-accent'}`}>
                     {isPago ? <CheckCircle2 className="h-6 w-6" /> : <Circle className="h-6 w-6" />}
                   </button>
                   <div className="space-y-1">
@@ -261,7 +300,10 @@ export default function EntradasPage() {
                 </div>
                 
                 <div className="mt-4 sm:mt-0 flex items-center justify-end gap-2">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(entrada.id)}>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary hover:bg-primary/10" onClick={(ev) => { ev.stopPropagation(); setDetalheEntrada(entrada); }}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={(ev) => { ev.stopPropagation(); handleDelete(entrada.id); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -270,6 +312,66 @@ export default function EntradasPage() {
           })}
         </div>
       )}
+
+      <Dialog open={!!detalheEntrada} onOpenChange={(open) => !open && setDetalheEntrada(null)}>
+        <DialogContent className="bg-background">
+          {detalheEntrada && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-serif text-primary">{detalheEntrada.cliente}</DialogTitle>
+                <DialogDescription>Detalhes da entrada</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground text-sm">Valor</span>
+                  <span className="font-bold text-green-600">{formatCurrency(detalheEntrada.valor)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground text-sm">Vencimento</span>
+                  <span>{formatDate(detalheEntrada.vencimento)}</span>
+                </div>
+                {detalheEntrada.dataPagamento && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Recebido em</span>
+                    <span>{formatDate(detalheEntrada.dataPagamento)}</span>
+                  </div>
+                )}
+                {detalheEntrada.contaBancaria && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Conta Bancária</span>
+                    <span>{detalheEntrada.contaBancaria}</span>
+                  </div>
+                )}
+                {detalheEntrada.centroCusto && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Centro de Custo</span>
+                    <span>{detalheEntrada.centroCusto}</span>
+                  </div>
+                )}
+                {detalheEntrada.observacao && (
+                  <div className="pt-2 border-t border-border">
+                    <span className="text-muted-foreground text-sm">Observação</span>
+                    <p className="text-sm mt-1">{detalheEntrada.observacao}</p>
+                  </div>
+                )}
+                {detalheEntrada.dadosPagamento && (
+                  <div className="pt-3 border-t border-border">
+                    <Label className="text-sm text-muted-foreground mb-1 block">
+                      {detalheEntrada.formaPagamento === "pix" ? "Chave Pix" : "Código do Boleto / Link"}
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={detalheEntrada.dadosPagamento} className="bg-slate-50 text-sm" />
+                      <Button type="button" variant="outline" size="icon" onClick={() => handleCopy(detalheEntrada.dadosPagamento!)}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
