@@ -12,6 +12,7 @@ export const entradasTable = pgTable("entradas", {
   dadosPagamento: text("dados_pagamento"),
   status: text("status").notNull().default("pendente").$type<"pago" | "pendente">(),
   observacao: text("observacao"),
+  centroCusto: text("centro_custo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
