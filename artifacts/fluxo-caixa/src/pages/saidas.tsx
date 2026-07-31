@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useListSaidas, useCreateSaida, useUpdateSaida, useDeleteSaida, getListSaidasQueryKey, Saida, SaidaInputStatus } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, CheckCircle2, Circle, FileText } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, FileText, Tag } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -33,6 +33,8 @@ function formatDate(dateStr: string) {
   }
 }
 
+const SEM_CENTRO = "__sem_centro__";
+
 export default function SaidasPage() {
   const { data: saidas = [], isLoading } = useListSaidas();
   const queryClient = useQueryClient();
@@ -43,13 +45,29 @@ export default function SaidasPage() {
   const deleteSaida = useDeleteSaida();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [filtroCentroCusto, setFiltroCentroCusto] = useState<string>("todos");
   const [formData, setFormData] = useState({
     descricao: "",
     valor: "",
     vencimento: format(new Date(), "yyyy-MM-dd"),
     status: "pendente" as SaidaInputStatus,
     observacao: "",
+    centroCusto: "",
   });
+
+  const centrosCusto = useMemo(() => {
+    const set = new Set<string>();
+    saidas.forEach((s) => {
+      if (s.centroCusto) set.add(s.centroCusto);
+    });
+    return Array.from(set).sort();
+  }, [saidas]);
+
+  const saidasFiltradas = useMemo(() => {
+    if (filtroCentroCusto === "todos") return saidas;
+    if (filtroCentroCusto === SEM_CENTRO) return saidas.filter((s) => !s.centroCusto);
+    return saidas.filter((s) => s.centroCusto === filtroCentroCusto);
+  }, [saidas, filtroCentroCusto]);
 
   const toggleStatus = (saida: Saida) => {
     const newStatus = saida.status === "pago" ? "pendente" : "pago";
@@ -84,7 +102,8 @@ export default function SaidasPage() {
       { 
         data: {
           ...formData,
-          valor: Number(formData.valor)
+          valor: Number(formData.valor),
+          centroCusto: formData.centroCusto || undefined,
         } 
       },
       {
@@ -94,7 +113,7 @@ export default function SaidasPage() {
           setIsSheetOpen(false);
           setFormData({
             descricao: "", valor: "", vencimento: format(new Date(), "yyyy-MM-dd"),
-            status: "pendente", observacao: ""
+            status: "pendente", observacao: "", centroCusto: ""
           });
         }
       }
@@ -143,6 +162,13 @@ export default function SaidasPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label htmlFor="centroCusto">Centro de Custo</Label>
+                <Input id="centroCusto" placeholder="Ex: Baruch Máquinas, Prima, Lavanderia..." value={formData.centroCusto} onChange={e => setFormData({...formData, centroCusto: e.target.value})} className="bg-white" list="centros-custo-sugestoes-saidas" />
+                <datalist id="centros-custo-sugestoes-saidas">
+                  {centrosCusto.map((c) => <option key={c} value={c} />)}
+                </datalist>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="observacao">Observação</Label>
                 <Textarea id="observacao" value={formData.observacao} onChange={e => setFormData({...formData, observacao: e.target.value})} className="bg-white" />
               </div>
@@ -154,11 +180,29 @@ export default function SaidasPage() {
         </Sheet>
       </div>
 
+      {centrosCusto.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <Select value={filtroCentroCusto} onValueChange={setFiltroCentroCusto}>
+            <SelectTrigger className="bg-white w-full sm:w-64">
+              <SelectValue placeholder="Filtrar por centro de custo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os centros de custo</SelectItem>
+              {centrosCusto.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+              <SelectItem value={SEM_CENTRO}>Sem centro de custo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="space-y-4">
           {[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
         </div>
-      ) : saidas.length === 0 ? (
+      ) : saidasFiltradas.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-xl border border-border shadow-sm">
           <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-serif text-primary">Nenhuma saída registrada</h3>
@@ -166,7 +210,7 @@ export default function SaidasPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {saidas.map((saida) => {
+          {saidasFiltradas.map((saida) => {
             const isPago = saida.status === "pago";
             return (
               <div key={saida.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-xl border shadow-sm transition-all bg-white hover:border-destructive/30 ${isPago ? 'border-border opacity-80' : 'border-card-border'}`}>
@@ -183,6 +227,11 @@ export default function SaidasPage() {
                         {formatCurrency(saida.valor)}
                       </span>
                       <span className="text-muted-foreground">• {formatDate(saida.vencimento)}</span>
+                      {saida.centroCusto && (
+                        <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20 text-[10px] tracking-wider ml-2">
+                          {saida.centroCusto}
+                        </Badge>
+                      )}
                       <Badge variant={isPago ? "default" : "secondary"} className={isPago ? "bg-green-100 text-green-700 hover:bg-green-100 uppercase text-[10px] tracking-wider ml-2" : "uppercase text-[10px] tracking-wider ml-2"}>
                         {saida.status}
                       </Badge>
