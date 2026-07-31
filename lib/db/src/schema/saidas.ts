@@ -8,9 +8,13 @@ export const saidasTable = pgTable("saidas", {
   descricao: text("descricao").notNull(),
   valor: numeric("valor", { precision: 12, scale: 2 }).notNull(),
   vencimento: date("vencimento", { mode: "string" }).notNull(),
+  formaPagamento: text("forma_pagamento").$type<"pix" | "boleto">(),
+  dadosPagamento: text("dados_pagamento"),
   status: text("status").notNull().default("pendente").$type<"pago" | "pendente">(),
   observacao: text("observacao"),
   centroCusto: text("centro_custo"),
+  contaBancaria: text("conta_bancaria"),
+  dataPagamento: date("data_pagamento", { mode: "string" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
