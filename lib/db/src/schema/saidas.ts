@@ -10,6 +10,7 @@ export const saidasTable = pgTable("saidas", {
   vencimento: date("vencimento", { mode: "string" }).notNull(),
   status: text("status").notNull().default("pendente").$type<"pago" | "pendente">(),
   observacao: text("observacao"),
+  centroCusto: text("centro_custo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
