@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useListEntradas, useCreateEntrada, useUpdateEntrada, useDeleteEntrada, getListEntradasQueryKey, Entrada, EntradaInputFormaPagamento, EntradaInputStatus } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, CheckCircle2, Circle, MoreVertical, Search, FileText } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, MoreVertical, Search, FileText, Tag } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -33,6 +33,8 @@ function formatDate(dateStr: string) {
   }
 }
 
+const SEM_CENTRO = "__sem_centro__";
+
 export default function EntradasPage() {
   const { data: entradas = [], isLoading } = useListEntradas();
   const queryClient = useQueryClient();
@@ -43,6 +45,7 @@ export default function EntradasPage() {
   const deleteEntrada = useDeleteEntrada();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [filtroCentroCusto, setFiltroCentroCusto] = useState<string>("todos");
   const [formData, setFormData] = useState({
     cliente: "",
     valor: "",
@@ -51,7 +54,22 @@ export default function EntradasPage() {
     dadosPagamento: "",
     status: "pendente" as EntradaInputStatus,
     observacao: "",
+    centroCusto: "",
   });
+
+  const centrosCusto = useMemo(() => {
+    const set = new Set<string>();
+    entradas.forEach((e) => {
+      if (e.centroCusto) set.add(e.centroCusto);
+    });
+    return Array.from(set).sort();
+  }, [entradas]);
+
+  const entradasFiltradas = useMemo(() => {
+    if (filtroCentroCusto === "todos") return entradas;
+    if (filtroCentroCusto === SEM_CENTRO) return entradas.filter((e) => !e.centroCusto);
+    return entradas.filter((e) => e.centroCusto === filtroCentroCusto);
+  }, [entradas, filtroCentroCusto]);
 
   const toggleStatus = (entrada: Entrada) => {
     const newStatus = entrada.status === "pago" ? "pendente" : "pago";
@@ -86,7 +104,8 @@ export default function EntradasPage() {
       { 
         data: {
           ...formData,
-          valor: Number(formData.valor)
+          valor: Number(formData.valor),
+          centroCusto: formData.centroCusto || undefined,
         } 
       },
       {
@@ -96,7 +115,7 @@ export default function EntradasPage() {
           setIsSheetOpen(false);
           setFormData({
             cliente: "", valor: "", vencimento: format(new Date(), "yyyy-MM-dd"),
-            formaPagamento: "pix", dadosPagamento: "", status: "pendente", observacao: ""
+            formaPagamento: "pix", dadosPagamento: "", status: "pendente", observacao: "", centroCusto: ""
           });
         }
       }
@@ -149,6 +168,13 @@ export default function EntradasPage() {
                 <Input id="dadosPagamento" value={formData.dadosPagamento} onChange={e => setFormData({...formData, dadosPagamento: e.target.value})} className="bg-white" />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="centroCusto">Centro de Custo</Label>
+                <Input id="centroCusto" placeholder="Ex: Baruch Máquinas, Prima, Lavanderia..." value={formData.centroCusto} onChange={e => setFormData({...formData, centroCusto: e.target.value})} className="bg-white" list="centros-custo-sugestoes" />
+                <datalist id="centros-custo-sugestoes">
+                  {centrosCusto.map((c) => <option key={c} value={c} />)}
+                </datalist>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="status">Status *</Label>
                 <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v as EntradaInputStatus})}>
                   <SelectTrigger className="bg-white">
@@ -172,11 +198,29 @@ export default function EntradasPage() {
         </Sheet>
       </div>
 
+      {centrosCusto.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <Select value={filtroCentroCusto} onValueChange={setFiltroCentroCusto}>
+            <SelectTrigger className="bg-white w-full sm:w-64">
+              <SelectValue placeholder="Filtrar por centro de custo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os centros de custo</SelectItem>
+              {centrosCusto.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+              <SelectItem value={SEM_CENTRO}>Sem centro de custo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="space-y-4">
           {[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
         </div>
-      ) : entradas.length === 0 ? (
+      ) : entradasFiltradas.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-xl border border-border shadow-sm">
           <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-serif text-primary">Nenhuma entrada registrada</h3>
@@ -184,7 +228,7 @@ export default function EntradasPage() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {entradas.map((entrada) => {
+          {entradasFiltradas.map((entrada) => {
             const isPago = entrada.status === "pago";
             return (
               <div key={entrada.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-xl border shadow-sm transition-all bg-white hover:border-primary/30 ${isPago ? 'border-border opacity-80' : 'border-card-border'}`}>
@@ -204,6 +248,11 @@ export default function EntradasPage() {
                       <Badge variant="outline" className="bg-slate-50 uppercase text-[10px] tracking-wider font-semibold ml-2">
                         {entrada.formaPagamento}
                       </Badge>
+                      {entrada.centroCusto && (
+                        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] tracking-wider">
+                          {entrada.centroCusto}
+                        </Badge>
+                      )}
                       <Badge variant={isPago ? "default" : "secondary"} className={isPago ? "bg-green-100 text-green-700 hover:bg-green-100 uppercase text-[10px] tracking-wider" : "uppercase text-[10px] tracking-wider"}>
                         {entrada.status}
                       </Badge>
