@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { UploadCloud, Camera as CameraIcon, ArrowRight, Loader2, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, Camera as CameraIcon, ArrowRight, Loader2, Image as ImageIcon, FileText } from "lucide-react";
 
 export default function ScanPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>("");
+  const [fileName, setFileName] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const scanImagem = useScanImagem();
@@ -22,6 +23,8 @@ export default function ScanPage() {
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const isPdf = mimeType === "application/pdf";
 
   const [formState, setFormState] = useState<{
     tipo: ScanImagemResultTipo;
@@ -39,11 +42,12 @@ export default function ScanPage() {
     if (!file) return;
 
     setMimeType(file.type);
+    setFileName(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
       const result = event.target?.result as string;
       setSelectedImage(result);
-      setFormState(null); // Reset form if new image is selected
+      setFormState(null);
     };
     reader.readAsDataURL(file);
   };
@@ -51,7 +55,6 @@ export default function ScanPage() {
   const handleScan = () => {
     if (!selectedImage) return;
 
-    // Remove the data:image/...;base64, prefix
     const base64Data = selectedImage.split(',')[1];
 
     scanImagem.mutate(
@@ -73,10 +76,10 @@ export default function ScanPage() {
             status: result.status || "pendente",
             observacao: result.observacao || "",
           });
-          toast({ title: "Imagem analisada!", description: "Revise os dados antes de salvar." });
+          toast({ title: "Arquivo analisado!", description: "Revise os dados antes de salvar." });
         },
         onError: () => {
-          toast({ title: "Erro na análise", description: "Não foi possível extrair dados da imagem.", variant: "destructive" });
+          toast({ title: "Erro na análise", description: "Não foi possível extrair dados do arquivo.", variant: "destructive" });
         }
       }
     );
@@ -132,6 +135,8 @@ export default function ScanPage() {
 
   const resetState = () => {
     setSelectedImage(null);
+    setMimeType("");
+    setFileName("");
     setFormState(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -140,14 +145,14 @@ export default function ScanPage() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
       <div className="flex items-center gap-3">
         <CameraIcon className="h-8 w-8 text-primary" />
-        <h1 className="text-3xl font-serif font-bold text-primary">Adicionar por Foto</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary">Adicionar por Foto ou Arquivo</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="border-0 shadow-md">
           <CardHeader>
             <CardTitle className="font-serif text-primary">Upload</CardTitle>
-            <CardDescription>Envie o print de um PIX, boleto ou comprovante.</CardDescription>
+            <CardDescription>Envie o print ou PDF de um PIX, boleto, nota fiscal ou comprovante.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div 
@@ -156,7 +161,7 @@ export default function ScanPage() {
             >
               <input 
                 type="file" 
-                accept="image/*" 
+                accept="image/*,application/pdf" 
                 className="hidden" 
                 ref={fileInputRef} 
                 onChange={handleFileChange}
@@ -164,10 +169,17 @@ export default function ScanPage() {
               
               {selectedImage ? (
                 <div className="space-y-4 w-full">
-                  <div className="relative w-full h-[200px] rounded-lg overflow-hidden border border-border">
-                    <img src={selectedImage} alt="Preview" className="object-contain w-full h-full" />
-                  </div>
-                  <Button variant="outline" className="w-full">Trocar imagem</Button>
+                  {isPdf ? (
+                    <div className="flex flex-col items-center justify-center w-full h-[200px] rounded-lg overflow-hidden border border-border bg-slate-50 gap-3">
+                      <FileText className="h-16 w-16 text-primary/60" />
+                      <p className="text-sm text-muted-foreground px-4 truncate max-w-full">{fileName}</p>
+                    </div>
+                  ) : (
+                    <div className="relative w-full h-[200px] rounded-lg overflow-hidden border border-border">
+                      <img src={selectedImage} alt="Preview" className="object-contain w-full h-full" />
+                    </div>
+                  )}
+                  <Button variant="outline" className="w-full">Trocar arquivo</Button>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -176,7 +188,7 @@ export default function ScanPage() {
                   </div>
                   <div>
                     <p className="font-medium text-lg text-foreground">Toque para enviar ou tirar foto</p>
-                    <p className="text-sm text-muted-foreground mt-1">PNG, JPG ou WEBP</p>
+                    <p className="text-sm text-muted-foreground mt-1">PNG, JPG, WEBP ou PDF</p>
                   </div>
                 </div>
               )}
@@ -188,9 +200,9 @@ export default function ScanPage() {
               onClick={handleScan}
             >
               {scanImagem.isPending ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Analisando imagem...</>
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Analisando arquivo...</>
               ) : (
-                <><ImageIcon className="mr-2 h-5 w-5" /> Analisar Imagem</>
+                <><ImageIcon className="mr-2 h-5 w-5" /> Analisar Arquivo</>
               )}
             </Button>
           </CardContent>
@@ -279,7 +291,7 @@ export default function ScanPage() {
         ) : (
           <div className="hidden lg:flex flex-col items-center justify-center text-center p-8 bg-slate-50 border border-border rounded-xl shadow-sm text-muted-foreground">
             <ArrowRight className="h-12 w-12 text-border mb-4" />
-            <p className="text-lg">Envie e analise uma imagem para preencher os dados automaticamente.</p>
+            <p className="text-lg">Envie e analise uma foto ou PDF para preencher os dados automaticamente.</p>
           </div>
         )}
       </div>
