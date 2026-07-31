@@ -8,17 +8,11 @@
 import * as zod from 'zod';
 
 
-/**
- * @summary Health check
- */
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
 
 
-/**
- * @summary Listar contas a receber
- */
 export const ListEntradasResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.string(),
@@ -29,16 +23,11 @@ export const ListEntradasResponseItem = zod.object({
   "dadosPagamento": zod.string().nullish().describe('Chave Pix ou link\/código do boleto'),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().nullish(),
+  "centroCusto": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
 export const ListEntradasResponse = zod.array(ListEntradasResponseItem)
-
-
-/**
- * @summary Criar conta a receber
- */
-
 
 
 export const CreateEntradaBody = zod.object({
@@ -48,7 +37,8 @@ export const CreateEntradaBody = zod.object({
   "formaPagamento": zod.enum(['pix', 'boleto']),
   "dadosPagamento": zod.string().optional(),
   "status": zod.enum(['pago', 'pendente']),
-  "observacao": zod.string().optional()
+  "observacao": zod.string().optional(),
+  "centroCusto": zod.string().optional()
 })
 
 export const CreateEntradaResponse = zod.object({
@@ -61,14 +51,12 @@ export const CreateEntradaResponse = zod.object({
   "dadosPagamento": zod.string().nullish().describe('Chave Pix ou link\/código do boleto'),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().nullish(),
+  "centroCusto": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
 
 
-/**
- * @summary Buscar conta a receber
- */
 export const GetEntradaParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -83,14 +71,12 @@ export const GetEntradaResponse = zod.object({
   "dadosPagamento": zod.string().nullish().describe('Chave Pix ou link\/código do boleto'),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().nullish(),
+  "centroCusto": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
 
 
-/**
- * @summary Atualizar conta a receber
- */
 export const UpdateEntradaParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -102,7 +88,8 @@ export const UpdateEntradaBody = zod.object({
   "formaPagamento": zod.enum(['pix', 'boleto']).optional(),
   "dadosPagamento": zod.string().optional(),
   "status": zod.enum(['pago', 'pendente']).optional(),
-  "observacao": zod.string().optional()
+  "observacao": zod.string().optional(),
+  "centroCusto": zod.string().optional()
 })
 
 export const UpdateEntradaResponse = zod.object({
@@ -115,14 +102,12 @@ export const UpdateEntradaResponse = zod.object({
   "dadosPagamento": zod.string().nullish().describe('Chave Pix ou link\/código do boleto'),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().nullish(),
+  "centroCusto": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
 
 
-/**
- * @summary Excluir conta a receber
- */
 export const DeleteEntradaParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -130,9 +115,6 @@ export const DeleteEntradaParams = zod.object({
 export const DeleteEntradaResponse = zod.void()
 
 
-/**
- * @summary Listar contas a pagar
- */
 export const ListSaidasResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.string(),
@@ -141,16 +123,11 @@ export const ListSaidasResponseItem = zod.object({
   "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().nullish(),
+  "centroCusto": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
 export const ListSaidasResponse = zod.array(ListSaidasResponseItem)
-
-
-/**
- * @summary Criar conta a pagar
- */
-
 
 
 export const CreateSaidaBody = zod.object({
@@ -158,7 +135,8 @@ export const CreateSaidaBody = zod.object({
   "valor": zod.number(),
   "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
   "status": zod.enum(['pago', 'pendente']),
-  "observacao": zod.string().optional()
+  "observacao": zod.string().optional(),
+  "centroCusto": zod.string().optional()
 })
 
 export const CreateSaidaResponse = zod.object({
@@ -169,14 +147,12 @@ export const CreateSaidaResponse = zod.object({
   "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().nullish(),
+  "centroCusto": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
 
 
-/**
- * @summary Buscar conta a pagar
- */
 export const GetSaidaParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -189,14 +165,12 @@ export const GetSaidaResponse = zod.object({
   "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().nullish(),
+  "centroCusto": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
 
 
-/**
- * @summary Atualizar conta a pagar
- */
 export const UpdateSaidaParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -206,7 +180,8 @@ export const UpdateSaidaBody = zod.object({
   "valor": zod.number().optional(),
   "vencimento": zod.string().optional(),
   "status": zod.enum(['pago', 'pendente']).optional(),
-  "observacao": zod.string().optional()
+  "observacao": zod.string().optional(),
+  "centroCusto": zod.string().optional()
 })
 
 export const UpdateSaidaResponse = zod.object({
@@ -217,14 +192,12 @@ export const UpdateSaidaResponse = zod.object({
   "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().nullish(),
+  "centroCusto": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
 
 
-/**
- * @summary Excluir conta a pagar
- */
 export const DeleteSaidaParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -232,9 +205,6 @@ export const DeleteSaidaParams = zod.object({
 export const DeleteSaidaResponse = zod.void()
 
 
-/**
- * @summary Resumo do painel
- */
 export const GetDashboardResponse = zod.object({
   "saldoAtual": zod.number().describe('Entradas pagas menos saídas pagas'),
   "totalAReceber": zod.number().describe('Total de entradas pendentes'),
@@ -246,9 +216,6 @@ export const GetDashboardResponse = zod.object({
 })
 
 
-/**
- * @summary Central de avisos
- */
 export const GetAvisosResponse = zod.object({
   "entradasVencendoAmanha": zod.array(zod.object({
   "id": zod.number(),
@@ -273,9 +240,6 @@ export const GetAvisosResponse = zod.object({
 })
 
 
-/**
- * @summary Relatório semanal
- */
 export const GetRelatorioSemanalQueryParams = zod.object({
   "weekStart": zod.coerce.string().optional()
 })
@@ -295,9 +259,6 @@ export const GetRelatorioSemanalResponse = zod.object({
 })
 
 
-/**
- * @summary Escanear imagem com IA
- */
 export const ScanImagemBody = zod.object({
   "imagemBase64": zod.string().describe('Imagem em base64'),
   "mimeType": zod.string().optional().describe('Tipo MIME da imagem (image\/jpeg, image\/png, etc)')
@@ -315,5 +276,3 @@ export const ScanImagemResponse = zod.object({
   "observacao": zod.string().nullish(),
   "erro": zod.string().nullish()
 })
-
-
