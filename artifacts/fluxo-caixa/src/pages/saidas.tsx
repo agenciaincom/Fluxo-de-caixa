@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
-import { useListSaidas, useCreateSaida, useUpdateSaida, useDeleteSaida, getListSaidasQueryKey, Saida, SaidaInputStatus } from "@workspace/api-client-react";
+import { useListSaidas, useCreateSaida, useUpdateSaida, useDeleteSaida, getListSaidasQueryKey, Saida, SaidaInputStatus, SaidaInputFormaPagamento } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, CheckCircle2, Circle, FileText, Tag } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, FileText, Tag, Copy, Eye } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -15,6 +15,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,6 +41,7 @@ function formatDate(dateStr: string) {
 }
 
 const SEM_CENTRO = "__sem_centro__";
+const NENHUMA_FORMA = "__nenhuma__";
 
 export default function SaidasPage() {
   const { data: saidas = [], isLoading } = useListSaidas();
@@ -46,19 +54,32 @@ export default function SaidasPage() {
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [filtroCentroCusto, setFiltroCentroCusto] = useState<string>("todos");
+  const [detalheSaida, setDetalheSaida] = useState<Saida | null>(null);
   const [formData, setFormData] = useState({
     descricao: "",
     valor: "",
     vencimento: format(new Date(), "yyyy-MM-dd"),
+    formaPagamento: NENHUMA_FORMA as string,
+    dadosPagamento: "",
     status: "pendente" as SaidaInputStatus,
     observacao: "",
     centroCusto: "",
+    contaBancaria: "",
+    dataPagamento: "",
   });
 
   const centrosCusto = useMemo(() => {
     const set = new Set<string>();
     saidas.forEach((s) => {
       if (s.centroCusto) set.add(s.centroCusto);
+    });
+    return Array.from(set).sort();
+  }, [saidas]);
+
+  const contasBancarias = useMemo(() => {
+    const set = new Set<string>();
+    saidas.forEach((s) => {
+      if (s.contaBancaria) set.add(s.contaBancaria);
     });
     return Array.from(set).sort();
   }, [saidas]);
@@ -96,6 +117,11 @@ export default function SaidasPage() {
     }
   };
 
+  const handleCopy = (texto: string) => {
+    navigator.clipboard.writeText(texto);
+    toast({ title: "Copiado!", description: "Dado de pagamento copiado para a área de transferência." });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createSaida.mutate(
@@ -103,7 +129,11 @@ export default function SaidasPage() {
         data: {
           ...formData,
           valor: Number(formData.valor),
+          formaPagamento: formData.formaPagamento === NENHUMA_FORMA ? undefined : formData.formaPagamento as SaidaInputFormaPagamento,
+          dadosPagamento: formData.dadosPagamento || undefined,
           centroCusto: formData.centroCusto || undefined,
+          contaBancaria: formData.contaBancaria || undefined,
+          dataPagamento: formData.dataPagamento || undefined,
         } 
       },
       {
@@ -113,7 +143,8 @@ export default function SaidasPage() {
           setIsSheetOpen(false);
           setFormData({
             descricao: "", valor: "", vencimento: format(new Date(), "yyyy-MM-dd"),
-            status: "pendente", observacao: "", centroCusto: ""
+            formaPagamento: NENHUMA_FORMA, dadosPagamento: "",
+            status: "pendente", observacao: "", centroCusto: "", contaBancaria: "", dataPagamento: ""
           });
         }
       }
@@ -150,6 +181,23 @@ export default function SaidasPage() {
                 <Input id="vencimento" type="date" required value={formData.vencimento} onChange={e => setFormData({...formData, vencimento: e.target.value})} className="bg-white" />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
+                <Select value={formData.formaPagamento} onValueChange={(v) => setFormData({...formData, formaPagamento: v})}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NENHUMA_FORMA}>Não informado</SelectItem>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="boleto">Boleto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dadosPagamento">Dados de Pagamento (Chave Pix ou Código de Barras/Link do Boleto)</Label>
+                <Input id="dadosPagamento" value={formData.dadosPagamento} onChange={e => setFormData({...formData, dadosPagamento: e.target.value})} className="bg-white" />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="status">Status *</Label>
                 <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v as SaidaInputStatus})}>
                   <SelectTrigger className="bg-white">
@@ -167,6 +215,19 @@ export default function SaidasPage() {
                 <datalist id="centros-custo-sugestoes-saidas">
                   {centrosCusto.map((c) => <option key={c} value={c} />)}
                 </datalist>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contaBancaria">Conta Bancária</Label>
+                  <Input id="contaBancaria" placeholder="Ex: Inter, Nubank..." value={formData.contaBancaria} onChange={e => setFormData({...formData, contaBancaria: e.target.value})} className="bg-white" list="contas-bancarias-sugestoes-saidas" />
+                  <datalist id="contas-bancarias-sugestoes-saidas">
+                    {contasBancarias.map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dataPagamento">Data que Pagou</Label>
+                  <Input id="dataPagamento" type="date" value={formData.dataPagamento} onChange={e => setFormData({...formData, dataPagamento: e.target.value})} className="bg-white" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="observacao">Observação</Label>
@@ -213,9 +274,9 @@ export default function SaidasPage() {
           {saidasFiltradas.map((saida) => {
             const isPago = saida.status === "pago";
             return (
-              <div key={saida.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-xl border shadow-sm transition-all bg-white hover:border-destructive/30 ${isPago ? 'border-border opacity-80' : 'border-card-border'}`}>
+              <div key={saida.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 rounded-xl border shadow-sm transition-all bg-white hover:border-destructive/30 cursor-pointer ${isPago ? 'border-border opacity-80' : 'border-card-border'}`} onClick={() => setDetalheSaida(saida)}>
                 <div className="flex items-start gap-4">
-                  <button onClick={() => toggleStatus(saida)} className={`mt-1 sm:mt-0 flex-shrink-0 transition-colors ${isPago ? 'text-green-500 hover:text-green-600' : 'text-muted-foreground hover:text-destructive'}`}>
+                  <button onClick={(ev) => { ev.stopPropagation(); toggleStatus(saida); }} className={`mt-1 sm:mt-0 flex-shrink-0 transition-colors ${isPago ? 'text-green-500 hover:text-green-600' : 'text-muted-foreground hover:text-destructive'}`}>
                     {isPago ? <CheckCircle2 className="h-6 w-6" /> : <Circle className="h-6 w-6" />}
                   </button>
                   <div className="space-y-1">
@@ -227,8 +288,13 @@ export default function SaidasPage() {
                         {formatCurrency(saida.valor)}
                       </span>
                       <span className="text-muted-foreground">• {formatDate(saida.vencimento)}</span>
+                      {saida.formaPagamento && (
+                        <Badge variant="outline" className="bg-slate-50 uppercase text-[10px] tracking-wider font-semibold ml-2">
+                          {saida.formaPagamento}
+                        </Badge>
+                      )}
                       {saida.centroCusto && (
-                        <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20 text-[10px] tracking-wider ml-2">
+                        <Badge variant="outline" className="bg-destructive/5 text-destructive border-destructive/20 text-[10px] tracking-wider">
                           {saida.centroCusto}
                         </Badge>
                       )}
@@ -240,7 +306,10 @@ export default function SaidasPage() {
                 </div>
                 
                 <div className="mt-4 sm:mt-0 flex items-center justify-end gap-2">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(saida.id)}>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={(ev) => { ev.stopPropagation(); setDetalheSaida(saida); }}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={(ev) => { ev.stopPropagation(); handleDelete(saida.id); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -249,6 +318,66 @@ export default function SaidasPage() {
           })}
         </div>
       )}
+
+      <Dialog open={!!detalheSaida} onOpenChange={(open) => !open && setDetalheSaida(null)}>
+        <DialogContent className="bg-background">
+          {detalheSaida && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-serif text-destructive">{detalheSaida.descricao}</DialogTitle>
+                <DialogDescription>Detalhes da saída</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground text-sm">Valor</span>
+                  <span className="font-bold text-destructive">{formatCurrency(detalheSaida.valor)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground text-sm">Vencimento</span>
+                  <span>{formatDate(detalheSaida.vencimento)}</span>
+                </div>
+                {detalheSaida.dataPagamento && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Pago em</span>
+                    <span>{formatDate(detalheSaida.dataPagamento)}</span>
+                  </div>
+                )}
+                {detalheSaida.contaBancaria && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Conta Bancária</span>
+                    <span>{detalheSaida.contaBancaria}</span>
+                  </div>
+                )}
+                {detalheSaida.centroCusto && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Centro de Custo</span>
+                    <span>{detalheSaida.centroCusto}</span>
+                  </div>
+                )}
+                {detalheSaida.observacao && (
+                  <div className="pt-2 border-t border-border">
+                    <span className="text-muted-foreground text-sm">Observação</span>
+                    <p className="text-sm mt-1">{detalheSaida.observacao}</p>
+                  </div>
+                )}
+                {detalheSaida.dadosPagamento && (
+                  <div className="pt-3 border-t border-border">
+                    <Label className="text-sm text-muted-foreground mb-1 block">
+                      {detalheSaida.formaPagamento === "pix" ? "Chave Pix" : "Código de Barras / Link do Boleto"}
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={detalheSaida.dadosPagamento} className="bg-slate-50 text-sm" />
+                      <Button type="button" variant="outline" size="icon" onClick={() => handleCopy(detalheSaida.dadosPagamento!)}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
