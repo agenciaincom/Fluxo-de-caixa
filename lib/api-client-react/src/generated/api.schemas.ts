@@ -43,6 +43,13 @@ export interface Entrada {
   observacao?: string | null;
   /** @nullable */
   centroCusto?: string | null;
+  /** @nullable */
+  contaBancaria?: string | null;
+  /**
+     * Data no formato YYYY-MM-DD
+     * @nullable
+     */
+  dataPagamento?: string | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
@@ -75,6 +82,8 @@ export interface EntradaInput {
   status: EntradaInputStatus;
   observacao?: string;
   centroCusto?: string;
+  contaBancaria?: string;
+  dataPagamento?: string;
 }
 
 export type EntradaUpdateFormaPagamento = typeof EntradaUpdateFormaPagamento[keyof typeof EntradaUpdateFormaPagamento];
@@ -102,7 +111,17 @@ export interface EntradaUpdate {
   status?: EntradaUpdateStatus;
   observacao?: string;
   centroCusto?: string;
+  contaBancaria?: string;
+  dataPagamento?: string;
 }
+
+export type SaidaFormaPagamento = typeof SaidaFormaPagamento[keyof typeof SaidaFormaPagamento];
+
+
+export const SaidaFormaPagamento = {
+  pix: 'pix',
+  boleto: 'boleto',
+} as const;
 
 export type SaidaStatus = typeof SaidaStatus[keyof typeof SaidaStatus];
 
@@ -119,15 +138,34 @@ export interface Saida {
   valor: number;
   /** Data no formato YYYY-MM-DD */
   vencimento: string;
+  /** @nullable */
+  formaPagamento?: SaidaFormaPagamento | null;
+  /** @nullable */
+  dadosPagamento?: string | null;
   status: SaidaStatus;
   /** @nullable */
   observacao?: string | null;
   /** @nullable */
   centroCusto?: string | null;
+  /** @nullable */
+  contaBancaria?: string | null;
+  /**
+     * Data no formato YYYY-MM-DD
+     * @nullable
+     */
+  dataPagamento?: string | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
 }
+
+export type SaidaInputFormaPagamento = typeof SaidaInputFormaPagamento[keyof typeof SaidaInputFormaPagamento];
+
+
+export const SaidaInputFormaPagamento = {
+  pix: 'pix',
+  boleto: 'boleto',
+} as const;
 
 export type SaidaInputStatus = typeof SaidaInputStatus[keyof typeof SaidaInputStatus];
 
@@ -143,10 +181,22 @@ export interface SaidaInput {
   valor: number;
   /** Data no formato YYYY-MM-DD */
   vencimento: string;
+  formaPagamento?: SaidaInputFormaPagamento;
+  dadosPagamento?: string;
   status: SaidaInputStatus;
   observacao?: string;
   centroCusto?: string;
+  contaBancaria?: string;
+  dataPagamento?: string;
 }
+
+export type SaidaUpdateFormaPagamento = typeof SaidaUpdateFormaPagamento[keyof typeof SaidaUpdateFormaPagamento];
+
+
+export const SaidaUpdateFormaPagamento = {
+  pix: 'pix',
+  boleto: 'boleto',
+} as const;
 
 export type SaidaUpdateStatus = typeof SaidaUpdateStatus[keyof typeof SaidaUpdateStatus];
 
@@ -160,9 +210,13 @@ export interface SaidaUpdate {
   descricao?: string;
   valor?: number;
   vencimento?: string;
+  formaPagamento?: SaidaUpdateFormaPagamento;
+  dadosPagamento?: string;
   status?: SaidaUpdateStatus;
   observacao?: string;
   centroCusto?: string;
+  contaBancaria?: string;
+  dataPagamento?: string;
 }
 
 export interface DashboardSummary {
