@@ -41,6 +41,8 @@ export interface Entrada {
   status: EntradaStatus;
   /** @nullable */
   observacao?: string | null;
+  /** @nullable */
+  centroCusto?: string | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
@@ -72,6 +74,7 @@ export interface EntradaInput {
   dadosPagamento?: string;
   status: EntradaInputStatus;
   observacao?: string;
+  centroCusto?: string;
 }
 
 export type EntradaUpdateFormaPagamento = typeof EntradaUpdateFormaPagamento[keyof typeof EntradaUpdateFormaPagamento];
@@ -98,6 +101,7 @@ export interface EntradaUpdate {
   dadosPagamento?: string;
   status?: EntradaUpdateStatus;
   observacao?: string;
+  centroCusto?: string;
 }
 
 export type SaidaStatus = typeof SaidaStatus[keyof typeof SaidaStatus];
@@ -118,6 +122,8 @@ export interface Saida {
   status: SaidaStatus;
   /** @nullable */
   observacao?: string | null;
+  /** @nullable */
+  centroCusto?: string | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
@@ -139,6 +145,7 @@ export interface SaidaInput {
   vencimento: string;
   status: SaidaInputStatus;
   observacao?: string;
+  centroCusto?: string;
 }
 
 export type SaidaUpdateStatus = typeof SaidaUpdateStatus[keyof typeof SaidaUpdateStatus];
@@ -155,6 +162,7 @@ export interface SaidaUpdate {
   vencimento?: string;
   status?: SaidaUpdateStatus;
   observacao?: string;
+  centroCusto?: string;
 }
 
 export interface DashboardSummary {
@@ -286,4 +294,3 @@ export type GetRelatorioSemanalParams = {
  */
 weekStart?: string;
 };
-
