@@ -4,7 +4,7 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-const PROMPT = `Analise esta imagem financeira (comprovante Pix, boleto, nota fiscal, conta a pagar, etc.) e extraia as informações relevantes.
+const PROMPT = `Analise este documento financeiro (foto ou PDF de comprovante Pix, boleto, nota fiscal, conta a pagar, etc.) e extraia as informações relevantes.
 
 Responda SOMENTE com um JSON válido no seguinte formato, sem markdown, sem texto extra:
 {
@@ -26,14 +26,14 @@ router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
   const { imagemBase64, mimeType } = req.body;
 
   if (!imagemBase64) {
-    res.status(400).json({ erro: "Imagem não fornecida" });
+    res.status(400).json({ erro: "Arquivo não fornecido" });
     return;
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     res.status(503).json({
-      erro: "Funcionalidade de leitura de imagem não configurada. Configure a chave GEMINI_API_KEY.",
+      erro: "Funcionalidade de leitura não configurada. Configure a chave GEMINI_API_KEY.",
     });
     return;
   }
@@ -43,7 +43,7 @@ router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -64,7 +64,6 @@ router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
             },
           ],
           generationConfig: {
-            temperature: 0,
             maxOutputTokens: 1024,
           },
         }),
@@ -74,7 +73,7 @@ router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
     if (!response.ok) {
       const errorText = await response.text();
       logger.error({ status: response.status, error: errorText }, "Gemini API error");
-      res.status(502).json({ erro: "Erro ao processar imagem com IA. Tente novamente." });
+      res.status(502).json({ erro: "Erro ao processar arquivo com IA. Tente novamente." });
       return;
     }
 
@@ -94,14 +93,14 @@ router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
       extracted = JSON.parse(jsonMatch[0]);
     } catch {
       logger.error({ text }, "Failed to parse Gemini response as JSON");
-      res.status(422).json({ erro: "Não foi possível extrair informações desta imagem." });
+      res.status(422).json({ erro: "Não foi possível extrair informações deste arquivo." });
       return;
     }
 
     res.json(extracted);
   } catch (err) {
     logger.error({ err }, "Error in scan-imagem");
-    res.status(500).json({ erro: "Erro interno ao processar imagem." });
+    res.status(500).json({ erro: "Erro interno ao processar arquivo." });
   }
 });
 
