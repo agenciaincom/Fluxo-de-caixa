@@ -17,6 +17,7 @@ import SaidasPage from '@/pages/saidas';
 import RelatorioPage from '@/pages/relatorio';
 import ScanPage from '@/pages/scan';
 import AssinaturaPage from '@/pages/assinatura';
+import ConciliacaoPage from '@/pages/conciliacao';
 
 const queryClient = new QueryClient();
 
@@ -161,6 +162,21 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   );
 }
 
+function ProtectedRouteNoGate({ component: Component }: { component: React.ComponentType }) {
+  return (
+    <>
+      <Show when="signed-in">
+        <Layout>
+          <Component />
+        </Layout>
+      </Show>
+      <Show when="signed-out">
+        <Redirect to="/sign-in" />
+      </Show>
+    </>
+  );
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -215,6 +231,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/saidas" component={() => <ProtectedRoute component={SaidasPage} />} />
             <Route path="/relatorio" component={() => <ProtectedRoute component={RelatorioPage} />} />
             <Route path="/scan" component={() => <ProtectedRoute component={ScanPage} />} />
+            <Route path="/conciliacao" component={() => <ProtectedRouteNoGate component={ConciliacaoPage} />} />
 
             <Route component={NotFound} />
           </Switch>
