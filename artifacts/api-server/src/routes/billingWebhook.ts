@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import express from "express";
 import { eq } from "drizzle-orm";
-import { db, subscriptionsTable } from "@workspace/db";
+import { db, subscriptionsTable, conciliacaoSubscriptionsTable } from "@workspace/db";
 import { stripe } from "../lib/stripe";
 import { logger } from "../lib/logger";
 
@@ -45,25 +45,38 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res): Pr
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as any;
       const userId = session.metadata?.userId;
+      const produto = session.metadata?.produto === "conciliacao" ? "conciliacao" : "principal";
+      const tabela = produto === "conciliacao" ? conciliacaoSubscriptionsTable : subscriptionsTable;
+
       if (userId) {
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
         await db
-          .update(subscriptionsTable)
+          .update(tabela)
           .set({
             stripeSubscriptionId: subscription.id,
             status: subscription.status === "trialing" ? "trialing" : "active",
             trialEnd: getTrialEnd(subscription),
             currentPeriodEnd: getCurrentPeriodEnd(subscription),
           })
-          .where(eq(subscriptionsTable.userId, userId));
+          .where(eq(tabela.userId, userId));
       }
     }
 
     if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as any;
-      const customerId = subscription.customer as string;
-      const [sub] = await db.select().from(subscriptionsTable).where(eq(subscriptionsTable.stripeCustomerId, customerId));
-      if (sub) {
+      const stripeSubscriptionId = subscription.id as string;
+
+      const [subPrincipal] = await db
+        .select()
+        .from(subscriptionsTable)
+        .where(eq(subscriptionsTable.stripeSubscriptionId, stripeSubscriptionId));
+
+      const tabela = subPrincipal ? subscriptionsTable : conciliacaoSubscriptionsTable;
+      const registro = subPrincipal
+        ? subPrincipal
+        : (await db.select().from(conciliacaoSubscriptionsTable).where(eq(conciliacaoSubscriptionsTable.stripeSubscriptionId, stripeSubscriptionId)))[0];
+
+      if (registro) {
         const status =
           event.type === "customer.subscription.deleted"
             ? "canceled"
@@ -72,14 +85,15 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res): Pr
               : subscription.status === "active"
                 ? "active"
                 : "past_due";
+
         await db
-          .update(subscriptionsTable)
+          .update(tabela)
           .set({
             status,
             trialEnd: getTrialEnd(subscription),
-            currentPeriodEnd: getCurrentPeriodEnd(subscription),
+            currentPeriodEnd: subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end ? getCurrentPeriodEnd(subscription) : registro.currentPeriodEnd,
           })
-          .where(eq(subscriptionsTable.userId, sub.userId));
+          .where(eq(tabela.userId, registro.userId));
       }
     }
   } catch (err) {
