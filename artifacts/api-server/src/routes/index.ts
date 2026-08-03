@@ -7,20 +7,25 @@ import dashboardRouter from "./dashboard";
 import avisosRouter from "./avisos";
 import relatorioRouter from "./relatorio";
 import scanRouter from "./scan";
+import conciliacaoRouter from "./conciliacao";
 import { requireSubscription } from "../middlewares/requireSubscription";
+import { requireConciliacao } from "../middlewares/requireConciliacao";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(billingRouter);
 
-router.use(requireSubscription);
+router.use(
+  requireSubscription,
+  entradasRouter,
+  saidasRouter,
+  dashboardRouter,
+  avisosRouter,
+  relatorioRouter,
+  scanRouter,
+);
 
-router.use(entradasRouter);
-router.use(saidasRouter);
-router.use(dashboardRouter);
-router.use(avisosRouter);
-router.use(relatorioRouter);
-router.use(scanRouter);
+router.use(requireConciliacao, conciliacaoRouter);
 
 export default router;
