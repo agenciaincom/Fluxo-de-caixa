@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useUser, useClerk } from "@clerk/react";
-import { LayoutDashboard, Bell, TrendingUp, TrendingDown, BarChart2, Camera, LogOut, Menu } from "lucide-react";
+import { LayoutDashboard, Bell, TrendingUp, TrendingDown, BarChart2, Camera, LogOut, Menu, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGetAvisos } from "@workspace/api-client-react";
 
@@ -21,6 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: "Saídas", href: "/saidas", icon: TrendingDown },
     { name: "Relatório", href: "/relatorio", icon: BarChart2 },
     { name: "Adicionar por Foto", href: "/scan", icon: Camera },
+    { name: "Conciliação", href: "/conciliacao", icon: Scale },
   ];
 
   return (
