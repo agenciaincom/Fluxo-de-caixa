@@ -136,8 +136,11 @@ export interface Saida {
   userId: string;
   descricao: string;
   valor: number;
-  /** Data no formato YYYY-MM-DD */
-  vencimento: string;
+  /**
+     * Data no formato YYYY-MM-DD
+     * @nullable
+     */
+  vencimento?: string | null;
   /** @nullable */
   formaPagamento?: SaidaFormaPagamento | null;
   /** @nullable */
@@ -154,6 +157,9 @@ export interface Saida {
      * @nullable
      */
   dataPagamento?: string | null;
+  recorrente: boolean;
+  /** @nullable */
+  diaVencimento?: number | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
@@ -178,9 +184,9 @@ export const SaidaInputStatus = {
 export interface SaidaInput {
   /** @minLength 1 */
   descricao: string;
-  valor: number;
+  valor?: number;
   /** Data no formato YYYY-MM-DD */
-  vencimento: string;
+  vencimento?: string;
   formaPagamento?: SaidaInputFormaPagamento;
   dadosPagamento?: string;
   status: SaidaInputStatus;
@@ -188,6 +194,8 @@ export interface SaidaInput {
   centroCusto?: string;
   contaBancaria?: string;
   dataPagamento?: string;
+  recorrente?: boolean;
+  diaVencimento?: number;
 }
 
 export type SaidaUpdateFormaPagamento = typeof SaidaUpdateFormaPagamento[keyof typeof SaidaUpdateFormaPagamento];
@@ -217,6 +225,8 @@ export interface SaidaUpdate {
   centroCusto?: string;
   contaBancaria?: string;
   dataPagamento?: string;
+  recorrente?: boolean;
+  diaVencimento?: number;
 }
 
 export interface DashboardSummary {
@@ -255,6 +265,7 @@ export interface AvisoSaida {
   descricao: string;
   valor: number;
   vencimento: string;
+  recorrente?: boolean;
 }
 
 export interface AvisosResult {
