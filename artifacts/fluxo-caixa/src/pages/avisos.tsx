@@ -2,8 +2,9 @@ import { useGetAvisos } from "@workspace/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Copy, CheckCircle2, AlertCircle, Info, TrendingDown, TrendingUp } from "lucide-react";
+import { Bell, Copy, CheckCircle2, AlertCircle, Info, TrendingDown, TrendingUp, Repeat } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -115,8 +116,17 @@ export default function AvisosPage() {
                   {data.saidasVencendoHoje.map(saida => (
                     <div key={saida.id} className="p-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors">
                       <div>
-                        <p className="font-bold text-lg text-primary">{saida.descricao}</p>
-                        <p className="text-destructive font-medium">{formatCurrency(saida.valor)}</p>
+                        <p className="font-bold text-lg text-primary flex items-center gap-2">
+                          {saida.descricao}
+                          {saida.recorrente && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] flex items-center gap-1">
+                              <Repeat className="h-3 w-3" /> Recorrente
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="text-destructive font-medium">
+                          {saida.recorrente && !saida.valor ? "Valor a definir" : formatCurrency(saida.valor)}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -138,8 +148,17 @@ export default function AvisosPage() {
                   {data.saidasVencendoAmanha.map(saida => (
                     <div key={saida.id} className="p-4 flex justify-between items-center bg-white hover:bg-slate-50 transition-colors">
                       <div>
-                        <p className="font-bold text-lg text-primary">{saida.descricao}</p>
-                        <p className="text-muted-foreground">{formatCurrency(saida.valor)}</p>
+                        <p className="font-bold text-lg text-primary flex items-center gap-2">
+                          {saida.descricao}
+                          {saida.recorrente && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] flex items-center gap-1">
+                              <Repeat className="h-3 w-3" /> Recorrente
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="text-muted-foreground">
+                          {saida.recorrente && !saida.valor ? "Valor a definir" : formatCurrency(saida.valor)}
+                        </p>
                       </div>
                     </div>
                   ))}
