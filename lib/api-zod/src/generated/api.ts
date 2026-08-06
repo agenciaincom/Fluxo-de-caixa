@@ -132,7 +132,7 @@ export const ListSaidasResponseItem = zod.object({
   "userId": zod.string(),
   "descricao": zod.string(),
   "valor": zod.number(),
-  "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
+  "vencimento": zod.string().nullish().describe('Data no formato YYYY-MM-DD'),
   "formaPagamento": zod.enum(['pix', 'boleto']).nullish(),
   "dadosPagamento": zod.string().nullish(),
   "status": zod.enum(['pago', 'pendente']),
@@ -140,6 +140,8 @@ export const ListSaidasResponseItem = zod.object({
   "centroCusto": zod.string().nullish(),
   "contaBancaria": zod.string().nullish(),
   "dataPagamento": zod.string().nullish(),
+  "recorrente": zod.boolean(),
+  "diaVencimento": zod.number().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
@@ -148,15 +150,17 @@ export const ListSaidasResponse = zod.array(ListSaidasResponseItem)
 
 export const CreateSaidaBody = zod.object({
   "descricao": zod.string().min(1),
-  "valor": zod.number(),
-  "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
+  "valor": zod.number().default(0),
+  "vencimento": zod.string().optional().describe('Data no formato YYYY-MM-DD'),
   "formaPagamento": zod.enum(['pix', 'boleto']).optional(),
   "dadosPagamento": zod.string().optional(),
   "status": zod.enum(['pago', 'pendente']),
   "observacao": zod.string().optional(),
   "centroCusto": zod.string().optional(),
   "contaBancaria": zod.string().optional(),
-  "dataPagamento": zod.string().optional()
+  "dataPagamento": zod.string().optional(),
+  "recorrente": zod.boolean().optional(),
+  "diaVencimento": zod.number().min(1).max(31).optional()
 })
 
 export const CreateSaidaResponse = zod.object({
@@ -164,7 +168,7 @@ export const CreateSaidaResponse = zod.object({
   "userId": zod.string(),
   "descricao": zod.string(),
   "valor": zod.number(),
-  "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
+  "vencimento": zod.string().nullish().describe('Data no formato YYYY-MM-DD'),
   "formaPagamento": zod.enum(['pix', 'boleto']).nullish(),
   "dadosPagamento": zod.string().nullish(),
   "status": zod.enum(['pago', 'pendente']),
@@ -172,6 +176,8 @@ export const CreateSaidaResponse = zod.object({
   "centroCusto": zod.string().nullish(),
   "contaBancaria": zod.string().nullish(),
   "dataPagamento": zod.string().nullish(),
+  "recorrente": zod.boolean(),
+  "diaVencimento": zod.number().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
@@ -186,7 +192,7 @@ export const GetSaidaResponse = zod.object({
   "userId": zod.string(),
   "descricao": zod.string(),
   "valor": zod.number(),
-  "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
+  "vencimento": zod.string().nullish().describe('Data no formato YYYY-MM-DD'),
   "formaPagamento": zod.enum(['pix', 'boleto']).nullish(),
   "dadosPagamento": zod.string().nullish(),
   "status": zod.enum(['pago', 'pendente']),
@@ -194,6 +200,8 @@ export const GetSaidaResponse = zod.object({
   "centroCusto": zod.string().nullish(),
   "contaBancaria": zod.string().nullish(),
   "dataPagamento": zod.string().nullish(),
+  "recorrente": zod.boolean(),
+  "diaVencimento": zod.number().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
@@ -213,7 +221,9 @@ export const UpdateSaidaBody = zod.object({
   "observacao": zod.string().optional(),
   "centroCusto": zod.string().optional(),
   "contaBancaria": zod.string().optional(),
-  "dataPagamento": zod.string().optional()
+  "dataPagamento": zod.string().optional(),
+  "recorrente": zod.boolean().optional(),
+  "diaVencimento": zod.number().min(1).max(31).optional()
 })
 
 export const UpdateSaidaResponse = zod.object({
@@ -221,7 +231,7 @@ export const UpdateSaidaResponse = zod.object({
   "userId": zod.string(),
   "descricao": zod.string(),
   "valor": zod.number(),
-  "vencimento": zod.string().describe('Data no formato YYYY-MM-DD'),
+  "vencimento": zod.string().nullish().describe('Data no formato YYYY-MM-DD'),
   "formaPagamento": zod.enum(['pix', 'boleto']).nullish(),
   "dadosPagamento": zod.string().nullish(),
   "status": zod.enum(['pago', 'pendente']),
@@ -229,6 +239,8 @@ export const UpdateSaidaResponse = zod.object({
   "centroCusto": zod.string().nullish(),
   "contaBancaria": zod.string().nullish(),
   "dataPagamento": zod.string().nullish(),
+  "recorrente": zod.boolean(),
+  "diaVencimento": zod.number().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
@@ -265,13 +277,15 @@ export const GetAvisosResponse = zod.object({
   "id": zod.number(),
   "descricao": zod.string(),
   "valor": zod.number(),
-  "vencimento": zod.string()
+  "vencimento": zod.string(),
+  "recorrente": zod.boolean().optional()
 })),
   "saidasVencendoAmanha": zod.array(zod.object({
   "id": zod.number(),
   "descricao": zod.string(),
   "valor": zod.number(),
-  "vencimento": zod.string()
+  "vencimento": zod.string(),
+  "recorrente": zod.boolean().optional()
 }))
 })
 
