@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Trash2, CheckCircle2, Circle, FileText, Tag, Copy, Eye } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, FileText, Tag, Copy, Eye, Repeat } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -27,9 +27,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 }
 
 function formatDate(dateStr: string) {
@@ -66,6 +67,8 @@ export default function SaidasPage() {
     centroCusto: "",
     contaBancaria: "",
     dataPagamento: "",
+    recorrente: false,
+    diaVencimento: "10",
   });
 
   const centrosCusto = useMemo(() => {
@@ -124,18 +127,28 @@ export default function SaidasPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const dataToSend: any = {
+      descricao: formData.descricao,
+      status: formData.status,
+      formaPagamento: formData.formaPagamento === NENHUMA_FORMA ? undefined : formData.formaPagamento as SaidaInputFormaPagamento,
+      dadosPagamento: formData.dadosPagamento || undefined,
+      centroCusto: formData.centroCusto || undefined,
+      contaBancaria: formData.contaBancaria || undefined,
+      dataPagamento: formData.dataPagamento || undefined,
+      observacao: formData.observacao || undefined,
+      recorrente: formData.recorrente,
+    };
+
+    if (formData.recorrente) {
+      dataToSend.diaVencimento = Number(formData.diaVencimento);
+      dataToSend.valor = formData.valor ? Number(formData.valor) : 0;
+    } else {
+      dataToSend.vencimento = formData.vencimento;
+      dataToSend.valor = Number(formData.valor);
+    }
+
     createSaida.mutate(
-      { 
-        data: {
-          ...formData,
-          valor: Number(formData.valor),
-          formaPagamento: formData.formaPagamento === NENHUMA_FORMA ? undefined : formData.formaPagamento as SaidaInputFormaPagamento,
-          dadosPagamento: formData.dadosPagamento || undefined,
-          centroCusto: formData.centroCusto || undefined,
-          contaBancaria: formData.contaBancaria || undefined,
-          dataPagamento: formData.dataPagamento || undefined,
-        } 
-      },
+      { data: dataToSend },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListSaidasQueryKey() });
@@ -144,7 +157,8 @@ export default function SaidasPage() {
           setFormData({
             descricao: "", valor: "", vencimento: format(new Date(), "yyyy-MM-dd"),
             formaPagamento: NENHUMA_FORMA, dadosPagamento: "",
-            status: "pendente", observacao: "", centroCusto: "", contaBancaria: "", dataPagamento: ""
+            status: "pendente", observacao: "", centroCusto: "", contaBancaria: "", dataPagamento: "",
+            recorrente: false, diaVencimento: "10",
           });
         }
       }
@@ -172,14 +186,43 @@ export default function SaidasPage() {
                 <Label htmlFor="descricao">Descrição / Fornecedor *</Label>
                 <Input id="descricao" required value={formData.descricao} onChange={e => setFormData({...formData, descricao: e.target.value})} className="bg-white" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="valor">Valor (R$) *</Label>
-                <Input id="valor" type="number" step="0.01" min="0.01" required value={formData.valor} onChange={e => setFormData({...formData, valor: e.target.value})} className="bg-white" />
+
+              <div className="flex items-center justify-between rounded-lg border border-border bg-white p-3">
+                <div className="space-y-0.5">
+                  <Label htmlFor="recorrente" className="flex items-center gap-2">
+                    <Repeat className="h-4 w-4" /> Conta recorrente (todo mês)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Ex: água, luz, internet — mesmo sem saber o valor ainda.</p>
+                </div>
+                <Switch id="recorrente" checked={formData.recorrente} onCheckedChange={(v) => setFormData({...formData, recorrente: v})} />
               </div>
+
+              {formData.recorrente ? (
+                <div className="space-y-2">
+                  <Label htmlFor="diaVencimento">Todo dia do mês *</Label>
+                  <Select value={formData.diaVencimento} onValueChange={(v) => setFormData({...formData, diaVencimento: v})}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                        <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="vencimento">Data de Vencimento *</Label>
+                  <Input id="vencimento" type="date" required={!formData.recorrente} value={formData.vencimento} onChange={e => setFormData({...formData, vencimento: e.target.value})} className="bg-white" />
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label htmlFor="vencimento">Data de Vencimento *</Label>
-                <Input id="vencimento" type="date" required value={formData.vencimento} onChange={e => setFormData({...formData, vencimento: e.target.value})} className="bg-white" />
+                <Label htmlFor="valor">Valor (R$) {formData.recorrente ? "— deixe em branco se ainda não souber" : "*"}</Label>
+                <Input id="valor" type="number" step="0.01" min="0" required={!formData.recorrente} value={formData.valor} onChange={e => setFormData({...formData, valor: e.target.value})} className="bg-white" placeholder={formData.recorrente ? "A definir" : ""} />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
                 <Select value={formData.formaPagamento} onValueChange={(v) => setFormData({...formData, formaPagamento: v})}>
@@ -197,18 +240,20 @@ export default function SaidasPage() {
                 <Label htmlFor="dadosPagamento">Dados de Pagamento (Chave Pix ou Código de Barras/Link do Boleto)</Label>
                 <Input id="dadosPagamento" value={formData.dadosPagamento} onChange={e => setFormData({...formData, dadosPagamento: e.target.value})} className="bg-white" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
-                <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v as SaidaInputStatus})}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="pago">Pago</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {!formData.recorrente && (
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status *</Label>
+                  <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v as SaidaInputStatus})}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="pago">Pago</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="centroCusto">Centro de Custo</Label>
                 <Input id="centroCusto" placeholder="Ex: Baruch Máquinas, Prima, Lavanderia..." value={formData.centroCusto} onChange={e => setFormData({...formData, centroCusto: e.target.value})} className="bg-white" list="centros-custo-sugestoes-saidas" />
@@ -285,11 +330,18 @@ export default function SaidasPage() {
                     </p>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <span className={`font-medium ${isPago ? 'text-muted-foreground' : 'text-destructive'}`}>
-                        {formatCurrency(saida.valor)}
+                        {saida.recorrente && !saida.valor ? "Valor a definir" : formatCurrency(saida.valor)}
                       </span>
-                      <span className="text-muted-foreground">• {formatDate(saida.vencimento)}</span>
+                      <span className="text-muted-foreground">
+                        • {saida.recorrente ? `Todo dia ${saida.diaVencimento}` : saida.vencimento ? formatDate(saida.vencimento) : "sem data"}
+                      </span>
+                      {saida.recorrente && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] tracking-wider flex items-center gap-1">
+                          <Repeat className="h-3 w-3" /> Recorrente
+                        </Badge>
+                      )}
                       {saida.formaPagamento && (
-                        <Badge variant="outline" className="bg-slate-50 uppercase text-[10px] tracking-wider font-semibold ml-2">
+                        <Badge variant="outline" className="bg-slate-50 uppercase text-[10px] tracking-wider font-semibold">
                           {saida.formaPagamento}
                         </Badge>
                       )}
@@ -298,9 +350,11 @@ export default function SaidasPage() {
                           {saida.centroCusto}
                         </Badge>
                       )}
-                      <Badge variant={isPago ? "default" : "secondary"} className={isPago ? "bg-green-100 text-green-700 hover:bg-green-100 uppercase text-[10px] tracking-wider ml-2" : "uppercase text-[10px] tracking-wider ml-2"}>
-                        {saida.status}
-                      </Badge>
+                      {!saida.recorrente && (
+                        <Badge variant={isPago ? "default" : "secondary"} className={isPago ? "bg-green-100 text-green-700 hover:bg-green-100 uppercase text-[10px] tracking-wider" : "uppercase text-[10px] tracking-wider"}>
+                          {saida.status}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -328,13 +382,22 @@ export default function SaidasPage() {
                 <DialogDescription>Detalhes da saída</DialogDescription>
               </DialogHeader>
               <div className="space-y-3 pt-2">
+                {detalheSaida.recorrente ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Recorrência</span>
+                    <span>Todo dia {detalheSaida.diaVencimento}</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-sm">Vencimento</span>
+                    <span>{detalheSaida.vencimento ? formatDate(detalheSaida.vencimento) : "-"}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground text-sm">Valor</span>
-                  <span className="font-bold text-destructive">{formatCurrency(detalheSaida.valor)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground text-sm">Vencimento</span>
-                  <span>{formatDate(detalheSaida.vencimento)}</span>
+                  <span className="font-bold text-destructive">
+                    {detalheSaida.recorrente && !detalheSaida.valor ? "A definir" : formatCurrency(detalheSaida.valor)}
+                  </span>
                 </div>
                 {detalheSaida.dataPagamento && (
                   <div className="flex justify-between items-center">
