@@ -17,6 +17,7 @@ export const saidasTable = pgTable("saidas", {
   dataPagamento: date("data_pagamento", { mode: "string" }),
   recorrente: boolean("recorrente").notNull().default(false),
   diaVencimento: integer("dia_vencimento"),
+  recorrenciaVezes: integer("recorrencia_vezes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
