@@ -57,9 +57,11 @@ router.get("/relatorio-semanal", requireAuth, async (req, res): Promise<void> =>
   const entradasSemana = entradas.filter(
     e => e.vencimento >= weekStart && e.vencimento <= weekEnd
   );
-  const saidasSemana = saidas.filter(
-    s => s.vencimento >= weekStart && s.vencimento <= weekEnd
+   const saidasSemana = saidas.filter(
+    (s): s is typeof s & { vencimento: string } =>
+      s.vencimento != null && s.vencimento >= weekStart && s.vencimento <= weekEnd
   );
+
 
   // Build per-day data
   const diasSemana = [];
