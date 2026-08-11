@@ -69,6 +69,8 @@ export default function SaidasPage() {
     dataPagamento: "",
     recorrente: false,
     diaVencimento: "10",
+    recorrenciaInfinita: true,
+    recorrenciaVezes: "6",
   });
 
   const centrosCusto = useMemo(() => {
@@ -142,6 +144,7 @@ export default function SaidasPage() {
     if (formData.recorrente) {
       dataToSend.diaVencimento = Number(formData.diaVencimento);
       dataToSend.valor = formData.valor ? Number(formData.valor) : 0;
+      dataToSend.recorrenciaVezes = formData.recorrenciaInfinita ? undefined : Number(formData.recorrenciaVezes);
     } else {
       dataToSend.vencimento = formData.vencimento;
       dataToSend.valor = Number(formData.valor);
@@ -158,7 +161,7 @@ export default function SaidasPage() {
             descricao: "", valor: "", vencimento: format(new Date(), "yyyy-MM-dd"),
             formaPagamento: NENHUMA_FORMA, dadosPagamento: "",
             status: "pendente", observacao: "", centroCusto: "", contaBancaria: "", dataPagamento: "",
-            recorrente: false, diaVencimento: "10",
+            recorrente: false, diaVencimento: "10", recorrenciaInfinita: true, recorrenciaVezes: "6",
           });
         }
       }
@@ -198,19 +201,37 @@ export default function SaidasPage() {
               </div>
 
               {formData.recorrente ? (
-                <div className="space-y-2">
-                  <Label htmlFor="diaVencimento">Todo dia do mês *</Label>
-                  <Select value={formData.diaVencimento} onValueChange={(v) => setFormData({...formData, diaVencimento: v})}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                        <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="diaVencimento">Todo dia do mês *</Label>
+                    <Select value={formData.diaVencimento} onValueChange={(v) => setFormData({...formData, diaVencimento: v})}>
+                      <SelectTrigger className="bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <SelectItem key={d} value={String(d)}>Dia {d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border border-border bg-white p-3">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="recorrenciaInfinita">Repetir para sempre</Label>
+                      <p className="text-xs text-muted-foreground">Desligue para definir um número de vezes (ex: um parcelamento de 6x).</p>
+                    </div>
+                    <Switch id="recorrenciaInfinita" checked={formData.recorrenciaInfinita} onCheckedChange={(v) => setFormData({...formData, recorrenciaInfinita: v})} />
+                  </div>
+
+                  {!formData.recorrenciaInfinita && (
+                    <div className="space-y-2">
+                      <Label htmlFor="recorrenciaVezes">Repetir quantas vezes *</Label>
+                      <Input id="recorrenciaVezes" type="number" min="1" step="1" required={!formData.recorrenciaInfinita} value={formData.recorrenciaVezes} onChange={e => setFormData({...formData, recorrenciaVezes: e.target.value})} className="bg-white" />
+                      <p className="text-xs text-muted-foreground">Depois desse número de meses, ela para de aparecer nos avisos automaticamente.</p>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="space-y-2">
                   <Label htmlFor="vencimento">Data de Vencimento *</Label>
@@ -337,7 +358,7 @@ export default function SaidasPage() {
                       </span>
                       {saida.recorrente && (
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] tracking-wider flex items-center gap-1">
-                          <Repeat className="h-3 w-3" /> Recorrente
+                          <Repeat className="h-3 w-3" /> {saida.recorrenciaVezes ? `${saida.recorrenciaVezes}x` : "Recorrente"}
                         </Badge>
                       )}
                       {saida.formaPagamento && (
@@ -383,10 +404,16 @@ export default function SaidasPage() {
               </DialogHeader>
               <div className="space-y-3 pt-2">
                 {detalheSaida.recorrente ? (
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground text-sm">Recorrência</span>
-                    <span>Todo dia {detalheSaida.diaVencimento}</span>
-                  </div>
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-sm">Recorrência</span>
+                      <span>Todo dia {detalheSaida.diaVencimento}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-sm">Repetições</span>
+                      <span>{detalheSaida.recorrenciaVezes ? `${detalheSaida.recorrenciaVezes} vezes` : "Sem fim (todo mês)"}</span>
+                    </div>
+                  </>
                 ) : (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground text-sm">Vencimento</span>
