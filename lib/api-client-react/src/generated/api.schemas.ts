@@ -362,5 +362,4 @@ export type GetRelatorioSemanalParams = {
  * Data de início da semana (YYYY-MM-DD)
  */
 weekStart?: string;
-};
-Stop listening to this terminal
+St
