@@ -160,6 +160,8 @@ export interface Saida {
   recorrente: boolean;
   /** @nullable */
   diaVencimento?: number | null;
+  /** @nullable */
+  recorrenciaVezes?: number | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
@@ -196,6 +198,7 @@ export interface SaidaInput {
   dataPagamento?: string;
   recorrente?: boolean;
   diaVencimento?: number;
+  recorrenciaVezes?: number;
 }
 
 export type SaidaUpdateFormaPagamento = typeof SaidaUpdateFormaPagamento[keyof typeof SaidaUpdateFormaPagamento];
@@ -227,6 +230,7 @@ export interface SaidaUpdate {
   dataPagamento?: string;
   recorrente?: boolean;
   diaVencimento?: number;
+  recorrenciaVezes?: number;
 }
 
 export interface DashboardSummary {
@@ -359,3 +363,4 @@ export type GetRelatorioSemanalParams = {
  */
 weekStart?: string;
 };
+Stop listening to this terminal
