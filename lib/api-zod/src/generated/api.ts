@@ -142,6 +142,7 @@ export const ListSaidasResponseItem = zod.object({
   "dataPagamento": zod.string().nullish(),
   "recorrente": zod.boolean(),
   "diaVencimento": zod.number().nullish(),
+  "recorrenciaVezes": zod.number().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
@@ -160,7 +161,8 @@ export const CreateSaidaBody = zod.object({
   "contaBancaria": zod.string().optional(),
   "dataPagamento": zod.string().optional(),
   "recorrente": zod.boolean().optional(),
-  "diaVencimento": zod.number().min(1).max(31).optional()
+  "diaVencimento": zod.number().min(1).max(31).optional(),
+  "recorrenciaVezes": zod.number().min(1).optional()
 })
 
 export const CreateSaidaResponse = zod.object({
@@ -178,6 +180,7 @@ export const CreateSaidaResponse = zod.object({
   "dataPagamento": zod.string().nullish(),
   "recorrente": zod.boolean(),
   "diaVencimento": zod.number().nullish(),
+  "recorrenciaVezes": zod.number().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
@@ -202,6 +205,7 @@ export const GetSaidaResponse = zod.object({
   "dataPagamento": zod.string().nullish(),
   "recorrente": zod.boolean(),
   "diaVencimento": zod.number().nullish(),
+  "recorrenciaVezes": zod.number().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
@@ -223,7 +227,8 @@ export const UpdateSaidaBody = zod.object({
   "contaBancaria": zod.string().optional(),
   "dataPagamento": zod.string().optional(),
   "recorrente": zod.boolean().optional(),
-  "diaVencimento": zod.number().min(1).max(31).optional()
+  "diaVencimento": zod.number().min(1).max(31).optional(),
+  "recorrenciaVezes": zod.number().min(1).optional()
 })
 
 export const UpdateSaidaResponse = zod.object({
@@ -241,6 +246,7 @@ export const UpdateSaidaResponse = zod.object({
   "dataPagamento": zod.string().nullish(),
   "recorrente": zod.boolean(),
   "diaVencimento": zod.number().nullish(),
+  "recorrenciaVezes": zod.number().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().nullish()
 })
