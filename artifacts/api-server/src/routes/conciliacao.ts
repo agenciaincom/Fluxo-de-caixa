@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, gte, lte, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, conciliacoesTable, conciliacaoItensTable, entradasTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
 import { logger } from "../lib/logger";
@@ -109,7 +109,7 @@ router.post("/conciliacao/upload", requireAuth, async (req, res): Promise<void> 
         const dataMax = addDays(t.data, 3);
         entradaEncontrada = todasEntradas.find((e) => {
           const valorBate = Math.abs(Number(e.valor) - t.valor!) < 0.01;
-          const dataRef = e.dataPagamento || e.vencimento;
+          const dataRef: string = e.dataPagamento ?? e.vencimento;
           const dataBate = dataRef >= dataMin && dataRef <= dataMax;
           return valorBate && dataBate;
         });
