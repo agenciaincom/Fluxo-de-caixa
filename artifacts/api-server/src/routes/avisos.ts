@@ -14,7 +14,7 @@ function getDateString(offsetDays: number): string {
   return `${year}-${month}-${day}`;
 }
 
-function proximaOcorrencia(diaVencimento: number, referencia: Date): string {
+function proximaOcorrencia(diaVencimento: number, referencia: Date): { data: string; ano: number; mes: number } {
   const year = referencia.getFullYear();
   const month = referencia.getMonth();
   const day = referencia.getDate();
@@ -36,7 +36,11 @@ function proximaOcorrencia(diaVencimento: number, referencia: Date): string {
   const diasNoMesAlvo = new Date(targetYear, targetMonth + 1, 0).getDate();
   const diaFinal = Math.min(diaVencimento, diasNoMesAlvo);
 
-  return `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(diaFinal).padStart(2, "0")}`;
+  return {
+    data: `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(diaFinal).padStart(2, "0")}`,
+    ano: targetYear,
+    mes: targetMonth,
+  };
 }
 
 router.get("/avisos", requireAuth, async (req, res): Promise<void> => {
@@ -86,15 +90,25 @@ router.get("/avisos", requireAuth, async (req, res): Promise<void> => {
 
   for (const s of saidasRecorrentes) {
     const proxima = proximaOcorrencia(s.diaVencimento as number, hoje);
+
+    if (s.recorrenciaVezes) {
+      const criada = new Date(s.createdAt);
+      const mesesDesdeInicio =
+        (proxima.ano - criada.getFullYear()) * 12 + (proxima.mes - criada.getMonth());
+      if (mesesDesdeInicio >= s.recorrenciaVezes) {
+        continue;
+      }
+    }
+
     const item = {
       id: s.id,
       descricao: s.descricao,
       valor: parseFloat(s.valor),
-      vencimento: proxima,
+      vencimento: proxima.data,
       recorrente: true,
     };
-    if (proxima === today) saidasVencendoHoje.push(item);
-    if (proxima === tomorrow) saidasVencendoAmanha.push(item);
+    if (proxima.data === today) saidasVencendoHoje.push(item);
+    if (proxima.data === tomorrow) saidasVencendoAmanha.push(item);
   }
 
   res.json({
