@@ -266,7 +266,18 @@ export const GetDashboardResponse = zod.object({
   "entradasPagas": zod.number(),
   "saidasPagas": zod.number(),
   "entradasPendentes": zod.number(),
-  "saidasPendentes": zod.number()
+  "saidasPendentes": zod.number(),
+  "saude": zod.enum(['boa', 'atencao', 'critica']),
+  "saudeMensagem": zod.string(),
+  "dinheiroPreso": zod.array(zod.object({
+  "id": zod.number(),
+  "cliente": zod.string(),
+  "valor": zod.number(),
+  "vencimento": zod.string(),
+  "diasAtraso": zod.number()
+})),
+  "totalPreso": zod.number(),
+  "conquistas": zod.array(zod.string())
 })
 
 
