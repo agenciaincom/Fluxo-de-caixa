@@ -4,23 +4,29 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-const PROMPT = `Analise este documento financeiro (foto ou PDF de comprovante Pix, boleto, nota fiscal, conta a pagar, etc.) e extraia as informações relevantes.
+const PROMPT = `Analise este documento (foto ou PDF) e extraia TODOS os lançamentos financeiros que encontrar — pode ser um único comprovante, uma lista com várias contas diferentes, várias parcelas de uma mesma fatura/boleto, ou uma mistura de tudo isso. NÃO leia só o primeiro item: percorra o documento inteiro e extraia cada linha/lançamento separadamente.
 
 Responda SOMENTE com um JSON válido no seguinte formato, sem markdown, sem texto extra:
 {
-  "tipo": "entrada" ou "saida" (entrada = receita/cliente pagou; saida = despesa/conta a pagar),
-  "cliente": "nome do cliente ou pagador" (só para entradas, null para saídas),
-  "descricao": "descrição ou nome do fornecedor/serviço" (para saídas),
-  "valor": número em reais (ex: 150.50),
-  "vencimento": "YYYY-MM-DD" (data de vencimento ou pagamento),
-  "formaPagamento": "pix" ou "boleto" (se aplicável, senão null),
-  "dadosPagamento": "chave pix ou código/link do boleto" (se encontrado, senão null),
-  "status": "pago" se já estiver pago/quitado, "pendente" se ainda não pago,
-  "observacao": "qualquer observação relevante" (opcional, null se não houver),
-  "erro": null (ou mensagem de erro se não conseguiu extrair as informações)
+  "lancamentos": [
+    {
+      "tipo": "entrada" ou "saida" (entrada = receita/cliente vai pagar; saida = despesa/conta a pagar),
+      "cliente": "nome do cliente ou pagador" (apenas para entradas, null para saídas),
+      "descricao": "descrição ou nome do fornecedor/serviço" (para saídas),
+      "valor": número em reais (ex: 150.50),
+      "vencimento": "YYYY-MM-DD" (data de vencimento ou pagamento),
+      "formaPagamento": "pix" ou "boleto" (se aplicável, senão null),
+      "dadosPagamento": "chave pix ou código/link do boleto" (se encontrado, senão null),
+      "status": "pago" se já estiver pago/quitado, "pendente" se ainda não pago,
+      "observacao": "qualquer observação relevante, como número da parcela (ex: Parcela 2/6)" (opcional, null se não houver)
+    }
+  ],
+  "erro": null (ou mensagem de erro se não conseguiu extrair nenhuma informação)
 }
 
-Se não conseguir identificar algum campo, use null para esse campo.`;
+Extraia quantos lançamentos encontrar — pode ser 1, pode ser 20. Se não conseguir identificar algum campo de um lançamento específico, use null nesse campo, mas ainda assim inclua o lançamento na lista.
+
+Hoje é {{HOJE}}.`;
 
 router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
   const { imagemBase64, mimeType } = req.body;
@@ -40,6 +46,7 @@ router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
 
   const today = new Date().toISOString().split("T")[0];
   const mediaType = (mimeType || "image/jpeg") as string;
+  const promptComData = PROMPT.replace("{{HOJE}}", today);
 
   try {
     const response = await fetch(
@@ -58,13 +65,13 @@ router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
                   },
                 },
                 {
-                  text: `${PROMPT}\n\nHoje é ${today}.`,
+                  text: promptComData,
                 },
               ],
             },
           ],
           generationConfig: {
-            maxOutputTokens: 1024,
+            maxOutputTokens: 4096,
           },
         }),
       }
@@ -95,6 +102,10 @@ router.post("/scan-imagem", requireAuth, async (req, res): Promise<void> => {
       logger.error({ text }, "Failed to parse Gemini response as JSON");
       res.status(422).json({ erro: "Não foi possível extrair informações deste arquivo." });
       return;
+    }
+
+    if (!Array.isArray(extracted.lancamentos)) {
+      extracted.lancamentos = [];
     }
 
     res.json(extracted);
