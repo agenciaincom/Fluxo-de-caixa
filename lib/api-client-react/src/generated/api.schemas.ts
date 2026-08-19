@@ -233,6 +233,23 @@ export interface SaidaUpdate {
   recorrenciaVezes?: number;
 }
 
+export type DashboardSummarySaude = typeof DashboardSummarySaude[keyof typeof DashboardSummarySaude];
+
+
+export const DashboardSummarySaude = {
+  boa: 'boa',
+  atencao: 'atencao',
+  critica: 'critica',
+} as const;
+
+export interface DinheiroPreso {
+  id: number;
+  cliente: string;
+  valor: number;
+  vencimento: string;
+  diasAtraso: number;
+}
+
 export interface DashboardSummary {
   /** Entradas pagas menos saídas pagas */
   saldoAtual: number;
@@ -244,6 +261,11 @@ export interface DashboardSummary {
   saidasPagas: number;
   entradasPendentes: number;
   saidasPendentes: number;
+  saude: DashboardSummarySaude;
+  saudeMensagem: string;
+  dinheiroPreso: DinheiroPreso[];
+  totalPreso: number;
+  conquistas: string[];
 }
 
 export type AvisoEntradaFormaPagamento = typeof AvisoEntradaFormaPagamento[keyof typeof AvisoEntradaFormaPagamento];
@@ -363,4 +385,3 @@ export type GetRelatorioSemanalParams = {
  */
 weekStart?: string;
 };
-
