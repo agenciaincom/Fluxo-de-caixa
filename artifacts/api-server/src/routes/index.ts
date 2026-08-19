@@ -7,6 +7,7 @@ import dashboardRouter from "./dashboard";
 import avisosRouter from "./avisos";
 import relatorioRouter from "./relatorio";
 import scanRouter from "./scan";
+import previsaoRouter from "./previsao";
 import conciliacaoRouter from "./conciliacao";
 import { requireSubscription } from "../middlewares/requireSubscription";
 import { requireConciliacao } from "../middlewares/requireConciliacao";
@@ -24,6 +25,7 @@ router.use(
   avisosRouter,
   relatorioRouter,
   scanRouter,
+  previsaoRouter,
 );
 
 router.use(requireConciliacao, conciliacaoRouter);
