@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, entradasTable, saidasTable } from "@workspace/db";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { parseCentrosFiltro } from "../lib/centrosCustoPlano";
 
 const router: IRouter = Router();
 
@@ -48,10 +49,15 @@ router.get("/relatorio-semanal", requireAuth, async (req, res): Promise<void> =>
   const weekStart = getStartOfWeek(weekStartParam);
   const weekEnd = addDays(weekStart, 6);
 
-  const [entradas, saidas] = await Promise.all([
+  const centrosFiltro = parseCentrosFiltro(req.query.centros);
+
+  const [entradasTodas, saidasTodas] = await Promise.all([
     db.select().from(entradasTable).where(eq(entradasTable.userId, userId)),
     db.select().from(saidasTable).where(eq(saidasTable.userId, userId)),
   ]);
+
+  const entradas = centrosFiltro ? entradasTodas.filter((e) => e.centroCustoId != null && centrosFiltro.includes(e.centroCustoId)) : entradasTodas;
+  const saidas = centrosFiltro ? saidasTodas.filter((s) => s.centroCustoId != null && centrosFiltro.includes(s.centroCustoId)) : saidasTodas;
 
   // Filter to week and only paid entries
   const entradasSemana = entradas.filter(
