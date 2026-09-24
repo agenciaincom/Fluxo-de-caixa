@@ -9,6 +9,9 @@ import relatorioRouter from "./relatorio";
 import scanRouter from "./scan";
 import previsaoRouter from "./previsao";
 import conciliacaoRouter from "./conciliacao";
+import centrosCustoRouter from "./centrosCusto";
+import lembretesRouter from "./lembretes";
+import streakRouter from "./streak";
 import { requireSubscription } from "../middlewares/requireSubscription";
 import { requireConciliacao } from "../middlewares/requireConciliacao";
 
@@ -16,6 +19,7 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(billingRouter);
+router.use(lembretesRouter);
 
 router.use(
   requireSubscription,
@@ -26,6 +30,8 @@ router.use(
   relatorioRouter,
   scanRouter,
   previsaoRouter,
+  centrosCustoRouter,
+  streakRouter,
 );
 
 router.use(requireConciliacao, conciliacaoRouter);
