@@ -128,6 +128,60 @@ function TermometroCard({ saude, mensagem }: { saude: "boa" | "atencao" | "criti
   );
 }
 
+interface StreakResponse {
+  streakAtual: number;
+  recorde: number;
+  selosConquistados: number[];
+  proximoMarco: number | null;
+  diasParaProximoMarco: number | null;
+}
+
+function StreakCard() {
+  const { data } = useQuery({
+    queryKey: ["streak"],
+    queryFn: async () => {
+      const res = await fetch("/api/streak", { credentials: "include" });
+      if (!res.ok) throw new Error("Erro ao buscar sequência");
+      return res.json() as Promise<StreakResponse>;
+    },
+  });
+
+  if (!data) return null;
+
+  const SELO_LABEL: Record<number, string> = { 7: "🔥 1 semana", 30: "🏅 1 mês", 90: "🏆 3 meses" };
+
+  return (
+    <Card className="border-0 shadow-sm bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+      <CardContent className="pt-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🔥</span>
+            <div>
+              <p className="font-bold text-lg text-foreground">
+                {data.streakAtual} {data.streakAtual === 1 ? "dia seguido" : "dias seguidos"} usando o Caixa Baruch
+              </p>
+              {data.proximoMarco && (
+                <p className="text-sm text-muted-foreground">
+                  Faltam {data.diasParaProximoMarco} dia{data.diasParaProximoMarco === 1 ? "" : "s"} pro selo de {SELO_LABEL[data.proximoMarco]}
+                </p>
+              )}
+            </div>
+          </div>
+          {data.selosConquistados.length > 0 && (
+            <div className="flex gap-2">
+              {data.selosConquistados.map((s) => (
+                <span key={s} className="bg-white px-3 py-1.5 rounded-full text-sm font-medium text-foreground border border-primary/20 shadow-sm">
+                  {SELO_LABEL[s]}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ConquistasCard({ conquistas }: { conquistas: string[] }) {
   if (conquistas.length === 0) return null;
   return (
@@ -287,6 +341,8 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <StreakCard />
 
       <ConquistasCard conquistas={data.conquistas} />
 
