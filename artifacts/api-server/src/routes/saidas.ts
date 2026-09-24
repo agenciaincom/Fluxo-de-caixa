@@ -9,16 +9,22 @@ import {
   DeleteSaidaParams,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { parseCentrosFiltro } from "../lib/centrosCustoPlano";
 
 const router: IRouter = Router();
 
 router.get("/saidas", requireAuth, async (req, res): Promise<void> => {
   const userId = (req as AuthenticatedRequest).userId;
-  const saidas = await db
+  const centrosFiltro = parseCentrosFiltro(req.query.centros);
+  const todasSaidas = await db
     .select()
     .from(saidasTable)
     .where(eq(saidasTable.userId, userId))
     .orderBy(asc(saidasTable.vencimento));
+
+  const saidas = centrosFiltro
+    ? todasSaidas.filter((s) => s.centroCustoId != null && centrosFiltro.includes(s.centroCustoId))
+    : todasSaidas;
 
   res.json(saidas.map(s => ({
     ...s,
