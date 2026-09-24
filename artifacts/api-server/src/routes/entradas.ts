@@ -9,16 +9,22 @@ import {
   DeleteEntradaParams,
 } from "@workspace/api-zod";
 import { requireAuth, type AuthenticatedRequest } from "../middlewares/requireAuth";
+import { parseCentrosFiltro } from "../lib/centrosCustoPlano";
 
 const router: IRouter = Router();
 
 router.get("/entradas", requireAuth, async (req, res): Promise<void> => {
   const userId = (req as AuthenticatedRequest).userId;
-  const entradas = await db
+  const centrosFiltro = parseCentrosFiltro(req.query.centros);
+  const todasEntradas = await db
     .select()
     .from(entradasTable)
     .where(eq(entradasTable.userId, userId))
     .orderBy(asc(entradasTable.vencimento));
+
+  const entradas = centrosFiltro
+    ? todasEntradas.filter((e) => e.centroCustoId != null && centrosFiltro.includes(e.centroCustoId))
+    : todasEntradas;
 
   res.json(entradas.map(e => ({
     ...e,
