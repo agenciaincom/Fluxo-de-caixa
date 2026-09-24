@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import express from "express";
 import { eq } from "drizzle-orm";
-import { db, subscriptionsTable, conciliacaoSubscriptionsTable } from "@workspace/db";
+import { db, subscriptionsTable, conciliacaoSubscriptionsTable, centrosCustoSubscriptionsTable } from "@workspace/db";
 import { stripe } from "../lib/stripe";
 import { logger } from "../lib/logger";
 
@@ -45,20 +45,39 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res): Pr
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as any;
       const userId = session.metadata?.userId;
-      const produto = session.metadata?.produto === "conciliacao" ? "conciliacao" : "principal";
-      const tabela = produto === "conciliacao" ? conciliacaoSubscriptionsTable : subscriptionsTable;
+      const produto = session.metadata?.produto === "conciliacao"
+        ? "conciliacao"
+        : session.metadata?.produto === "centro_custo_extra"
+          ? "centro_custo_extra"
+          : "principal";
 
       if (userId) {
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-        await db
-          .update(tabela)
-          .set({
-            stripeSubscriptionId: subscription.id,
-            status: subscription.status === "trialing" ? "trialing" : "active",
-            trialEnd: getTrialEnd(subscription),
-            currentPeriodEnd: getCurrentPeriodEnd(subscription),
-          })
-          .where(eq(tabela.userId, userId));
+
+        if (produto === "centro_custo_extra") {
+          const item = subscription.items?.data?.[0];
+          await db
+            .update(centrosCustoSubscriptionsTable)
+            .set({
+              stripeSubscriptionId: subscription.id,
+              stripeSubscriptionItemId: item?.id,
+              quantidade: item?.quantity ?? 1,
+              status: subscription.status === "trialing" ? "trialing" : "active",
+              currentPeriodEnd: getCurrentPeriodEnd(subscription),
+            })
+            .where(eq(centrosCustoSubscriptionsTable.userId, userId));
+        } else {
+          const tabela = produto === "conciliacao" ? conciliacaoSubscriptionsTable : subscriptionsTable;
+          await db
+            .update(tabela)
+            .set({
+              stripeSubscriptionId: subscription.id,
+              status: subscription.status === "trialing" ? "trialing" : "active",
+              trialEnd: getTrialEnd(subscription),
+              currentPeriodEnd: getCurrentPeriodEnd(subscription),
+            })
+            .where(eq(tabela.userId, userId));
+        }
       }
     }
 
@@ -70,11 +89,15 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res): Pr
         .select()
         .from(subscriptionsTable)
         .where(eq(subscriptionsTable.stripeSubscriptionId, stripeSubscriptionId));
+      const [subConciliacao] = subPrincipal
+        ? [undefined]
+        : await db.select().from(conciliacaoSubscriptionsTable).where(eq(conciliacaoSubscriptionsTable.stripeSubscriptionId, stripeSubscriptionId));
+      const [subCentroCusto] = subPrincipal || subConciliacao
+        ? [undefined]
+        : await db.select().from(centrosCustoSubscriptionsTable).where(eq(centrosCustoSubscriptionsTable.stripeSubscriptionId, stripeSubscriptionId));
 
-      const tabela = subPrincipal ? subscriptionsTable : conciliacaoSubscriptionsTable;
-      const registro = subPrincipal
-        ? subPrincipal
-        : (await db.select().from(conciliacaoSubscriptionsTable).where(eq(conciliacaoSubscriptionsTable.stripeSubscriptionId, stripeSubscriptionId)))[0];
+      const tabela = subPrincipal ? subscriptionsTable : subConciliacao ? conciliacaoSubscriptionsTable : centrosCustoSubscriptionsTable;
+      const registro = subPrincipal ?? subConciliacao ?? subCentroCusto;
 
       if (registro) {
         const status =
@@ -86,13 +109,24 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res): Pr
                 ? "active"
                 : "past_due";
 
+        const extra: Record<string, unknown> = {};
+        if (tabela === centrosCustoSubscriptionsTable) {
+          const item = subscription.items?.data?.[0];
+          if (item) {
+            extra.quantidade = item.quantity ?? (registro as any).quantidade;
+            extra.stripeSubscriptionItemId = item.id;
+          }
+        } else {
+          extra.trialEnd = getTrialEnd(subscription);
+        }
+
         await db
           .update(tabela)
           .set({
             status,
-            trialEnd: getTrialEnd(subscription),
             currentPeriodEnd: subscription.current_period_end || subscription.items?.data?.[0]?.current_period_end ? getCurrentPeriodEnd(subscription) : registro.currentPeriodEnd,
-          })
+            ...extra,
+          } as never)
           .where(eq(tabela.userId, registro.userId));
       }
     }
