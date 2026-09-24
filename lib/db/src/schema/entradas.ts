@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, date, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -13,6 +13,7 @@ export const entradasTable = pgTable("entradas", {
   status: text("status").notNull().default("pendente").$type<"pago" | "pendente">(),
   observacao: text("observacao"),
   centroCusto: text("centro_custo"),
+  centroCustoId: integer("centro_custo_id"),
   contaBancaria: text("conta_bancaria"),
   dataPagamento: date("data_pagamento", { mode: "string" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
