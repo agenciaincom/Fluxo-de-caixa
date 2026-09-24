@@ -13,6 +13,7 @@ export const saidasTable = pgTable("saidas", {
   status: text("status").notNull().default("pendente").$type<"pago" | "pendente">(),
   observacao: text("observacao"),
   centroCusto: text("centro_custo"),
+  centroCustoId: integer("centro_custo_id"),
   contaBancaria: text("conta_bancaria"),
   dataPagamento: date("data_pagamento", { mode: "string" }),
   recorrente: boolean("recorrente").notNull().default(false),
